@@ -1,35 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import api from './api';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [status, setStatus] = useState('Checking connection...');
+  const [backendData, setBackendData] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Test backend connection
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const response = await api.get('/');
+        setBackendData(response.data);
+        setStatus('✅ Connected to backend!');
+        setError(null);
+      } catch (err) {
+        setStatus('❌ Failed to connect');
+        setError(err.message);
+      }
+    };
+
+    testConnection();
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+    <div>
+      <h1>PowerSense Home</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+        <h2>Backend Connection Status</h2>
+        <p><strong>Status:</strong> {status}</p>
+        {backendData && (
+          <div>
+            <p><strong>Backend Message:</strong> {backendData.message}</p>
+            <p><strong>Version:</strong> {backendData.version}</p>
+            <p><strong>Status:</strong> {backendData.status}</p>
+          </div>
+        )}
+        {error && (
+          <div style={{ color: 'red' }}>
+            <p><strong>Error:</strong> {error}</p>
+          </div>
+        )}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+
+      <div className="card">
+        <h3>Configuration</h3>
+        <p><strong>Frontend URL:</strong> eb-bill-virid.vercel.app</p>
+        <p><strong>Backend URL:</strong> {import.meta.env.VITE_API_URL || 'https://eb-bill-lkcc.onrender.com'}</p>
+      </div>
+
+      <div className="card">
+        <h3>Next Steps</h3>
+        <ul style={{ textAlign: 'left' }}>
+          <li>✅ Frontend and backend URLs configured</li>
+          <li>✅ API client created with JWT support</li>
+          <li>⏳ Install dependencies: <code>npm install</code></li>
+          <li>⏳ Deploy updated frontend to Vercel</li>
+          <li>⏳ Update backend CORS with Vercel URL</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
