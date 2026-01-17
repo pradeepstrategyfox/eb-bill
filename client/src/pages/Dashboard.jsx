@@ -201,11 +201,11 @@ export default function Dashboard() {
 
             <div className="section">
                 <h2>Your Appliances</h2>
-                {selectedHome?.Rooms?.map((room) => (
+                {(selectedHome?.rooms || selectedHome?.Rooms || []).map((room) => (
                     <div key={room.id} className="room-section">
                         <h3>{room.name} ({room.type})</h3>
                         <div className="appliances-grid">
-                            {room.Appliances?.map((appliance) => (
+                            {(room.appliances || room.Appliances || []).map((appliance) => (
                                 <div key={appliance.id} className="appliance-control">
                                     <div className="appliance-info">
                                         <div className="appliance-name">{appliance.name}</div>

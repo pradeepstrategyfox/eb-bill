@@ -92,17 +92,29 @@ router.get('/:id', async (req, res) => {
  */
 router.get('/', async (req, res) => {
     try {
+        console.log('📥 Fetching homes for user:', req.userId);
+
         const homes = await Home.findAll({
             where: { userId: req.userId },
             include: [{
                 model: Room,
                 as: 'rooms',
+                include: [{
+                    model: Appliance,
+                    as: 'appliances',
+                }],
             }],
         });
 
+        console.log(`✅ Found ${homes.length} home(s) for user`);
+        if (homes.length > 0) {
+            console.log(`   First home has ${homes[0].rooms?.length || 0} rooms`);
+        }
+
         res.json(homes);
     } catch (error) {
-        console.error('Get homes error:', error);
+        console.error('❌ Get homes error:', error);
+        console.error('Error details:', error.message);
         res.status(500).json({ error: 'Failed to get homes' });
     }
 });

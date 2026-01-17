@@ -21,10 +21,11 @@ export default function MeterReading() {
             setHomes(homesRes.data);
 
             if (homesRes.data.length > 0) {
-                const home = homesRes.data[0];
+                const home = homes[0];
                 setSelectedHome(home);
 
-                const historyRes = await api.get(`/api/homes/${home.id}/meter-readings`);
+                // Fetch meter reading history - correct path
+                const historyRes = await api.get(`/api/meter/homes/${home.id}/meter-readings`);
                 setHistory(historyRes.data);
             }
         } catch (error) {
@@ -39,7 +40,8 @@ export default function MeterReading() {
         setSuccess('');
 
         try {
-            await api.post(`/api/homes/${selectedHome.id}/meter-readings`, {
+            // Submit to correct backend path
+            await api.post(`/api/meter/homes/${selectedHome.id}/meter-readings`, {
                 readingValue: parseFloat(reading)
             });
             setSuccess('Meter reading submitted successfully!');
