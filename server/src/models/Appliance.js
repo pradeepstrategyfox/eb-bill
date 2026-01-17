@@ -13,10 +13,11 @@ const Appliance = sequelize.define('Appliance', {
         allowNull: false,
         field: 'room_id',
         references: {
-            model: 'rooms',
+            model: 'ps_rooms',
             key: 'id',
         },
         onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
     },
     name: {
         type: DataTypes.STRING,

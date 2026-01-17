@@ -13,10 +13,11 @@ const ApplianceUsageLog = sequelize.define('ApplianceUsageLog', {
         allowNull: false,
         field: 'appliance_id',
         references: {
-            model: 'appliances',
+            model: 'ps_appliances',
             key: 'id',
         },
         onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
     },
     turnedOnAt: {
         type: DataTypes.DATE,

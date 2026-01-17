@@ -13,10 +13,11 @@ const Home = sequelize.define('Home', {
         allowNull: false,
         field: 'user_id',
         references: {
-            model: 'users',
-            key: 'id',
+            model: 'ps_users', // Explicitly reference the table name with prefix
+            key: 'id'
         },
         onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
     },
     name: {
         type: DataTypes.STRING,

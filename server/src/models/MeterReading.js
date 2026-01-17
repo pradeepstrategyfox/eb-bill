@@ -13,10 +13,11 @@ const MeterReading = sequelize.define('MeterReading', {
         allowNull: false,
         field: 'home_id',
         references: {
-            model: 'homes',
+            model: 'ps_homes',
             key: 'id',
         },
         onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
     },
     readingValue: {
         type: DataTypes.FLOAT,
