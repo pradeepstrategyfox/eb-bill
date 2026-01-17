@@ -10,9 +10,9 @@ router.use(authMiddleware);
 
 /**
  * Get current bill projection
- * GET /api/homes/:homeId/billing/current
+ * GET /api/billing/:homeId/current
  */
-router.get('/homes/:homeId/billing/current', async (req, res) => {
+router.get('/:homeId/current', async (req, res) => {
     try {
         const home = await Home.findOne({
             where: {
@@ -51,9 +51,9 @@ router.get('/homes/:homeId/billing/current', async (req, res) => {
 
 /**
  * Get billing history
- * GET /api/homes/:homeId/billing/history
+ * GET /api/billing/:homeId/history
  */
-router.get('/homes/:homeId/billing/history', async (req, res) => {
+router.get('/:homeId/history', async (req, res) => {
     try {
         const home = await Home.findOne({
             where: {
