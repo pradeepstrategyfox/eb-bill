@@ -8,9 +8,9 @@ router.use(authMiddleware);
 
 /**
  * Get live consumption data
- * GET /api/homes/:homeId/consumption/live
+ * GET /api/consumption/:homeId/live
  */
-router.get('/homes/:homeId/consumption/live', async (req, res) => {
+router.get('/:homeId/live', async (req, res) => {
     try {
         const home = await Home.findOne({
             where: {
@@ -33,9 +33,9 @@ router.get('/homes/:homeId/consumption/live', async (req, res) => {
 
 /**
  * Get insights with cost breakdown
- * GET /api/homes/:homeId/consumption/insights
+ * GET /api/consumption/:homeId/insights
  */
-router.get('/homes/:homeId/consumption/insights', async (req, res) => {
+router.get('/:homeId/insights', async (req, res) => {
     try {
         const home = await Home.findOne({
             where: {

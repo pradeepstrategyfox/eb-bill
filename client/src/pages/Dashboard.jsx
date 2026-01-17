@@ -108,11 +108,11 @@ export default function Dashboard() {
                 setSelectedHome(home);
 
                 // Fetch consumption data
-                const consRes = await api.get(`/api/homes/${home.id}/consumption/live`);
+                const consRes = await api.get(`/api/consumption/${home.id}/live`);
                 setConsumption(consRes.data);
 
                 // Fetch billing data
-                const billRes = await api.get(`/api/homes/${home.id}/billing/current`);
+                const billRes = await api.get(`/api/billing/${home.id}/current`);
                 setBilling(billRes.data);
             }
         } catch (error) {
