@@ -23,7 +23,47 @@ export default function SetupWizard() {
                 console.error('Error fetching appliances:', error);
             }
         };
+
+        // Check if user already has a home configured
+        const checkExistingHome = async () => {
+            try {
+                console.log('🔍 Checking for existing home...');
+                const response = await api.get('/api/homes');
+                if (response.data && response.data.length > 0) {
+                    const existingHome = response.data[0];
+                    console.log('✅ Found existing home:', existingHome.name);
+
+                    // Populate form with existing data
+                    setHomeData({
+                        name: existingHome.name,
+                        totalRooms: existingHome.totalRooms || existingHome.rooms?.length || 3
+                    });
+
+                    // Populate rooms if they exist
+                    if (existingHome.rooms && existingHome.rooms.length > 0) {
+                        const formattedRooms = existingHome.rooms.map(room => ({
+                            name: room.name,
+                            type: room.type,
+                            appliances: (room.appliances || []).map(app => ({
+                                name: app.name,
+                                type: app.type,
+                                wattage: app.wattage
+                            }))
+                        }));
+                        setRooms(formattedRooms);
+                        console.log(`✅ Loaded ${formattedRooms.length} existing rooms`);
+                    }
+                } else {
+                    console.log('ℹ️ No existing home found - starting fresh');
+                }
+            } catch (error) {
+                console.error('⚠️ Error checking existing home:', error);
+                // Not critical - user can still create new
+            }
+        };
+
         fetchAppliances();
+        checkExistingHome();
     }, []);
 
     const handleHomeSubmit = () => {

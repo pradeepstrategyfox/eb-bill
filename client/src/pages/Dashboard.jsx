@@ -100,23 +100,46 @@ export default function Dashboard() {
 
     const fetchData = async () => {
         try {
+            console.log('📡 Fetching dashboard data...');
             const homesRes = await api.get('/api/homes');
+            console.log('✅ Homes response:', homesRes.data);
             setHomes(homesRes.data);
 
-            if (homesRes.data.length > 0) {
+            if (homesRes.data && homesRes.data.length > 0) {
                 const home = homesRes.data[0];
+                console.log('🏠 Selected home:', home.id, home.name);
                 setSelectedHome(home);
 
-                // Fetch consumption data
-                const consRes = await api.get(`/api/consumption/${home.id}/live`);
-                setConsumption(consRes.data);
+                // Fetch consumption data with error handling
+                try {
+                    const consRes = await api.get(`/api/consumption/${home.id}/live`);
+                    console.log('⚡ Consumption data:', consRes.data);
+                    setConsumption(consRes.data);
+                } catch (consErr) {
+                    console.error('⚠️ Failed to fetch consumption:', consErr.message);
+                    setConsumption({ liveLoad: 0, activeAppliances: 0, today: 0, cycleUsage: 0 });
+                }
 
-                // Fetch billing data
-                const billRes = await api.get(`/api/billing/${home.id}/current`);
-                setBilling(billRes.data);
+                // Fetch billing data with error handling
+                try {
+                    const billRes = await api.get(`/api/billing/${home.id}/current`);
+                    console.log('💰 Billing data:', billRes.data);
+                    setBilling(billRes.data);
+                } catch (billErr) {
+                    console.error('⚠️ Failed to fetch billing:', billErr.message);
+                    setBilling({ totalBill: 0, slab: 'No data' });
+                }
+            } else {
+                console.log('⚠️ No homes found for user');
+                setSelectedHome(null);
+                setConsumption(null);
+                setBilling(null);
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('❌ Error fetching dashboard data:', error);
+            console.error('Error details:', error.response?.data || error.message);
+            // Don't crash - show empty state
+            setHomes([]);
         } finally {
             setLoading(false);
         }
