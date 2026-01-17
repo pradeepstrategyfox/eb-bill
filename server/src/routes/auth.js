@@ -173,30 +173,39 @@ router.post('/register', [
     body('name').notEmpty(),
 ], async (req, res) => {
     try {
+        console.log('📝 Registration attempt:', req.body.email);
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            console.log('❌ Validation errors:', errors.array());
             return res.status(400).json({ errors: errors.array() });
         }
 
         const { email, password, name } = req.body;
 
         // Check if user exists
+        console.log('🔍 Checking if user exists:', email);
         const existing = await User.findOne({ where: { email } });
         if (existing) {
+            console.log('❌ User already exists:', email);
             return res.status(400).json({ error: 'User already exists' });
         }
 
         // Hash password
+        console.log('🔐 Hashing password...');
         const passwordHash = await bcrypt.hash(password, 10);
 
         // Create user
+        console.log('👤 Creating user:', { email, name });
         const user = await User.create({
             email,
             passwordHash,
             name,
         });
+        console.log('✅ User created successfully:', user.id);
 
         const token = generateToken(user.id);
+        console.log('🎫 Token generated');
 
         res.status(201).json({
             token,
@@ -208,7 +217,16 @@ router.post('/register', [
             },
         });
     } catch (error) {
-        console.error('Register error:', error);
+        console.error('❌❌❌ REGISTRATION ERROR ❌❌❌');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        if (error.parent) {
+            console.error('Parent error:', error.parent.message);
+        }
+        if (error.sql) {
+            console.error('SQL:', error.sql);
+        }
         res.status(500).json({ error: 'Registration failed' });
     }
 });
