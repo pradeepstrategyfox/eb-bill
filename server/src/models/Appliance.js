@@ -39,9 +39,10 @@ const Appliance = sequelize.define('Appliance', {
         field: 'is_on',
     },
 }, {
-    tableName: 'appliances',
-    underscored: true,
+    tableName: 'ps_appliances',
     timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
 });
 
 // Associations

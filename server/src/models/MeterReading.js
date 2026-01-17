@@ -38,10 +38,10 @@ const MeterReading = sequelize.define('MeterReading', {
         field: 'variance_percentage',
     },
 }, {
-    tableName: 'meter_readings',
+    tableName: 'ps_meter_readings',
     underscored: true,
     timestamps: true,
-    updatedAt: false,
+    createdAt: 'createdAt',
 });
 
 // Associations

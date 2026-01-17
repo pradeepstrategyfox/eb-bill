@@ -44,9 +44,10 @@ const Room = sequelize.define('Room', {
         field: 'position_y',
     },
 }, {
-    tableName: 'rooms',
-    underscored: true,
+    tableName: 'ps_rooms',
     timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
 });
 
 // Associations

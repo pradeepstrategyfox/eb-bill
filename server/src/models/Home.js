@@ -32,9 +32,10 @@ const Home = sequelize.define('Home', {
         },
     },
 }, {
-    tableName: 'homes',
-    underscored: true,
+    tableName: 'ps_homes',
     timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
 });
 
 // Associations

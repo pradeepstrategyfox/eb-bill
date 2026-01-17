@@ -30,9 +30,10 @@ const User = sequelize.define('User', {
         allowNull: false,
     },
 }, {
-    tableName: 'users',
-    underscored: true,
+    tableName: 'ps_users',
     timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
 });
 
 export default User;

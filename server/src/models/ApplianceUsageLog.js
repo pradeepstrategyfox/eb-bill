@@ -41,7 +41,7 @@ const ApplianceUsageLog = sequelize.define('ApplianceUsageLog', {
         field: 'energy_consumed_kwh',
     },
 }, {
-    tableName: 'appliance_usage_logs',
+    tableName: 'ps_appliance_usage_logs',
     underscored: true,
     timestamps: true,
     updatedAt: false, // Only createdAt

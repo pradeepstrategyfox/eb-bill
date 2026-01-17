@@ -50,9 +50,11 @@ const TariffSlab = sequelize.define('TariffSlab', {
         field: 'effective_from',
     },
 }, {
-    tableName: 'tariff_slabs',
+    tableName: 'ps_tariff_slabs',
     underscored: true,
     timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
 });
 
 export default TariffSlab;

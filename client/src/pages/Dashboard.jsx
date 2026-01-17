@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import api from '../api';
 import './Dashboard.css';
 
-export default function Dashboard({ children }) {
+function DashboardLayout({ children }) {
     const navigate = useNavigate();
     const location = useLocation();
     const [user, setUser] = useState(null);
@@ -31,7 +32,6 @@ export default function Dashboard({ children }) {
 
     return (
         <div className="dashboard-layout">
-            {/* Sidebar */}
             <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
                 <div className="sidebar-header">
                     <div className="logo">
@@ -61,9 +61,7 @@ export default function Dashboard({ children }) {
                 </div>
             </aside>
 
-            {/* Main Content */}
             <div className="main-content">
-                {/* Top Bar */}
                 <header className="topbar">
                     <button
                         className="sidebar-toggle"
@@ -79,28 +77,97 @@ export default function Dashboard({ children }) {
                     </div>
                 </header>
 
-                {/* Page Content */}
                 <main className="page-content">
-                    <DashboardHome />
+                    {children}
                 </main>
             </div>
         </div>
     );
 }
 
-function DashboardHome() {
+export default function Dashboard() {
+    const [homes, setHomes] = useState([]);
+    const [selectedHome, setSelectedHome] = useState(null);
+    const [consumption, setConsumption] = useState(null);
+    const [billing, setBilling] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchData();
+        const interval = setInterval(fetchData, 5000); // Refresh every 5 seconds
+        return () => clearInterval(interval);
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const homesRes = await api.get('/api/homes');
+            setHomes(homesRes.data);
+
+            if (homesRes.data.length > 0) {
+                const home = homesRes.data[0];
+                setSelectedHome(home);
+
+                // Fetch consumption data
+                const consRes = await api.get(`/api/homes/${home.id}/consumption/live`);
+                setConsumption(consRes.data);
+
+                // Fetch billing data
+                const billRes = await api.get(`/api/homes/${home.id}/billing/current`);
+                setBilling(billRes.data);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleAppliance = async (applianceId) => {
+        try {
+            await api.patch(`/api/appliances/${applianceId}/toggle`);
+            fetchData(); // Refresh data
+        } catch (error) {
+            console.error('Error toggling appliance:', error);
+        }
+    };
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div className="spinner" style={{ width: '48px', height: '48px', margin: '0 auto' }}></div>
+                    <p style={{ marginTop: '1rem', color: '#64748b' }}>Loading...</p>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    if (homes.length === 0) {
+        return (
+            <DashboardLayout>
+                <div className="empty-state">
+                    <div className="empty-icon">🏠</div>
+                    <h2>No Home Configured</h2>
+                    <p>Set up your home to start tracking electricity consumption</p>
+                    <Link to="/setup" className="btn-primary">Set Up Home</Link>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
     return (
-        <div className="dashboard-home">
+        <DashboardLayout>
             <h1>Dashboard</h1>
 
-            {/* Stats Cards */}
             <div className="stats-grid">
                 <div className="stat-card">
                     <div className="stat-icon">⚡</div>
                     <div className="stat-content">
                         <p className="stat-label">Live Load</p>
-                        <h2 className="stat-value">0 W</h2>
-                        <p className="stat-change">No appliances on</p>
+                        <h2 className="stat-value">{consumption?.liveLoad || 0} W</h2>
+                        <p className="stat-change">
+                            {consumption?.activeAppliances || 0} appliances on
+                        </p>
                     </div>
                 </div>
 
@@ -108,8 +175,8 @@ function DashboardHome() {
                     <div className="stat-icon">📊</div>
                     <div className="stat-content">
                         <p className="stat-label">Today's Usage</p>
-                        <h2 className="stat-value">0 kWh</h2>
-                        <p className="stat-change">Start tracking</p>
+                        <h2 className="stat-value">{consumption?.today?.toFixed(2) || 0} kWh</h2>
+                        <p className="stat-change">This billing cycle</p>
                     </div>
                 </div>
 
@@ -117,67 +184,49 @@ function DashboardHome() {
                     <div className="stat-icon">💰</div>
                     <div className="stat-content">
                         <p className="stat-label">Estimated Bill</p>
-                        <h2 className="stat-value">₹0</h2>
-                        <p className="stat-change">Current cycle</p>
+                        <h2 className="stat-value">₹{billing?.totalBill?.toFixed(0) || 0}</h2>
+                        <p className="stat-change">{billing?.slab || 'No data'}</p>
                     </div>
                 </div>
 
                 <div className="stat-card">
                     <div className="stat-icon">📅</div>
                     <div className="stat-content">
-                        <p className="stat-label">Billing Cycle</p>
-                        <h2 className="stat-value">0/60</h2>
-                        <p className="stat-change">Days elapsed</p>
+                        <p className="stat-label">Cycle Units</p>
+                        <h2 className="stat-value">{consumption?.cycleUsage?.toFixed(1) || 0}</h2>
+                        <p className="stat-change">kWh consumed</p>
                     </div>
                 </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="section">
-                <h2>Quick Actions</h2>
-                <div className="actions-grid">
-                    <Link to="/setup" className="action-card">
-                        <div className="action-icon">🏠</div>
-                        <h3>Set Up Home</h3>
-                        <p>Configure your rooms and appliances</p>
-                    </Link>
-
-                    <Link to="/meter-reading" className="action-card">
-                        <div className="action-icon">⚡</div>
-                        <h3>Submit Reading</h3>
-                        <p>Enter your meter reading</p>
-                    </Link>
-
-                    <Link to="/insights" className="action-card">
-                        <div className="action-icon">💡</div>
-                        <h3>View Insights</h3>
-                        <p>See top consumers and trends</p>
-                    </Link>
-
-                    <Link to="/bill-explanation" className="action-card">
-                        <div className="action-icon">💰</div>
-                        <h3>Explain Bill</h3>
-                        <p>Understand your electricity bill</p>
-                    </Link>
-                </div>
-            </div>
-
-            {/* Getting Started */}
-            <div className="section">
-                <div className="info-box">
-                    <div className="info-icon">ℹ️</div>
-                    <div className="info-content">
-                        <h3>Welcome to PowerSense Home!</h3>
-                        <p>
-                            To get started, set up your home by adding rooms and appliances.
-                            Then toggle appliances on and off to track your electricity consumption in real-time.
-                        </p>
-                        <Link to="/setup" className="btn-primary">
-                            Get Started →
-                        </Link>
+                <h2>Your Appliances</h2>
+                {selectedHome?.Rooms?.map((room) => (
+                    <div key={room.id} className="room-section">
+                        <h3>{room.name} ({room.type})</h3>
+                        <div className="appliances-grid">
+                            {room.Appliances?.map((appliance) => (
+                                <div key={appliance.id} className="appliance-control">
+                                    <div className="appliance-info">
+                                        <div className="appliance-name">{appliance.name}</div>
+                                        <div className="appliance-power">{appliance.wattage}W</div>
+                                    </div>
+                                    <label className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={appliance.isOn}
+                                            onChange={() => toggleAppliance(appliance.id)}
+                                        />
+                                        <span className="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                ))}
             </div>
-        </div>
+        </DashboardLayout>
     );
 }
+
+export { DashboardLayout };

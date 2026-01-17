@@ -51,7 +51,7 @@ const BillingCycle = sequelize.define('BillingCycle', {
         field: 'is_active',
     },
 }, {
-    tableName: 'billing_cycles',
+    tableName: 'ps_billing_cycles',
     underscored: true,
     timestamps: true,
 });
