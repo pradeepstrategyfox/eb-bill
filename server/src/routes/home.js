@@ -225,15 +225,34 @@ router.post('/:id/rooms/:roomId/appliances', [
 
         const { appliances } = req.body;
 
-        // Create all appliances
+        console.log('📥 Received appliances data:', JSON.stringify(appliances, null, 2));
+
+        // Validate and create all appliances
         const createdAppliances = await Promise.all(
-            appliances.map(appliance => Appliance.create({
-                roomId: room.id,
-                name: appliance.name,
-                wattage: appliance.wattage,
-                isOn: false,
-            }))
+            appliances.map((appliance, index) => {
+                // Validate required fields
+                const applianceType = appliance.type || appliance.name;
+                const applianceName = appliance.name || appliance.type;
+                const applianceWattage = appliance.wattage || 100;
+
+                if (!applianceType) {
+                    console.error(`❌ Appliance at index ${index} missing type:`, appliance);
+                    throw new Error(`Appliance #${index + 1} is missing type field`);
+                }
+
+                console.log(`✓ Creating appliance: ${applianceName} (${applianceType}) - ${applianceWattage}W`);
+
+                return Appliance.create({
+                    roomId: room.id,
+                    name: applianceName,
+                    type: applianceType, // CRITICAL: This was missing!
+                    wattage: applianceWattage,
+                    isOn: false,
+                });
+            })
         );
+
+        console.log(`✅ Successfully created ${createdAppliances.length} appliances`);
 
         res.status(201).json(createdAppliances);
     } catch (error) {
