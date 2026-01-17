@@ -88,23 +88,49 @@ export default function SetupWizard() {
                 const createdRoom = roomsResponse.data[i];
 
                 if (room.appliances.length > 0) {
-                    const appliancesData = room.appliances.map(app => ({
-                        name: app.type,
-                        type: app.type,
-                        wattage: app.wattage
-                    }));
+                    const appliancesData = room.appliances.map(app => {
+                        // Ensure type field exists and is not empty
+                        const applianceType = app.type || app.name;
+
+                        if (!applianceType) {
+                            console.error('❌ Appliance missing type:', app);
+                            throw new Error('Appliance data is invalid - missing type');
+                        }
+
+                        return {
+                            name: applianceType,
+                            type: applianceType,
+                            wattage: app.wattage || 100 // Default to 100W if missing
+                        };
+                    });
+
+                    console.log(`📤 Creating ${appliancesData.length} appliances for ${room.name}:`, appliancesData);
 
                     await api.post(`/api/homes/${homeId}/rooms/${createdRoom.id}/appliances`, {
                         appliances: appliancesData
                     });
+
+                    console.log(`✅ Appliances created for ${room.name}`);
                 }
             }
 
             navigate('/dashboard');
         } catch (error) {
-            console.error('Setup error:', error);
+            console.error('❌ Setup wizard error:', error);
             console.error('Error details:', error.response?.data);
-            alert('Failed to save configuration. Please try again.');
+            console.error('Error message:', error.message);
+
+            let errorMessage = 'Failed to save configuration. ';
+
+            if (error.response?.data?.error) {
+                errorMessage += error.response.data.error;
+            } else if (error.message) {
+                errorMessage += error.message;
+            } else {
+                errorMessage += 'Please try again.';
+            }
+
+            alert(errorMessage);
         } finally {
             setLoading(false);
         }
