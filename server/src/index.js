@@ -73,10 +73,29 @@ async function startServer() {
         await sequelize.authenticate();
         console.log('✓ Database connected successfully');
 
-        // Sync database models (in development)
-        if (process.env.NODE_ENV === 'development') {
-            await sequelize.sync({ alter: false });
-            console.log('✓ Database models synchronized');
+        // Auto-sync database models and seed tariffs
+        console.log('🔄 Syncing database tables...');
+        await sequelize.sync({ alter: false, force: false });
+        console.log('✓ Database tables synced');
+
+        // Auto-seed tariff slabs if they don't exist
+        const TariffSlab = (await import('./models/TariffSlab.js')).default;
+        const tariffCount = await TariffSlab.count();
+
+        if (tariffCount === 0) {
+            console.log('🔄 Seeding TNEB tariff slabs...');
+            const tariffs = [
+                { minUnits: 0, maxUnits: 100, ratePerUnit: 2.50, fixedCharge: 20, subsidyPercentage: 50, effectiveFrom: new Date('2024-01-01') },
+                { minUnits: 101, maxUnits: 200, ratePerUnit: 3.00, fixedCharge: 30, subsidyPercentage: 25, effectiveFrom: new Date('2024-01-01') },
+                { minUnits: 201, maxUnits: 400, ratePerUnit: 4.50, fixedCharge: 50, subsidyPercentage: 0, effectiveFrom: new Date('2024-01-01') },
+                { minUnits: 401, maxUnits: 500, ratePerUnit: 6.00, fixedCharge: 75, subsidyPercentage: 0, effectiveFrom: new Date('2024-01-01') },
+                { minUnits: 501, maxUnits: 800, ratePerUnit: 7.50, fixedCharge: 100, subsidyPercentage: 0, effectiveFrom: new Date('2024-01-01') },
+                { minUnits: 801, maxUnits: null, ratePerUnit: 9.00, fixedCharge: 150, subsidyPercentage: 0, effectiveFrom: new Date('2024-01-01') },
+            ];
+            await TariffSlab.bulkCreate(tariffs);
+            console.log(`✓ Seeded ${tariffs.length} TNEB tariff slabs`);
+        } else {
+            console.log(`✓ Tariff slabs already exist (${tariffCount} slabs)`);
         }
 
         // Initialize Redis
@@ -88,6 +107,7 @@ async function startServer() {
         app.listen(PORT, () => {
             console.log(`✓ Server running on port ${PORT}`);
             console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log('✓ PowerSense Home API is ready!');
         });
     } catch (error) {
         console.error('Failed to start server:', error);
