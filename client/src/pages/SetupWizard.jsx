@@ -70,23 +70,39 @@ export default function SetupWizard() {
             const homeResponse = await api.post('/api/homes', homeData);
             const homeId = homeResponse.data.id;
 
-            // Create rooms and appliances
-            for (const room of rooms) {
-                const roomResponse = await api.post(`/api/homes/${homeId}/rooms`, {
-                    name: room.name,
-                    type: room.type,
-                    squareFootage: 100
-                });
+            // Prepare rooms data
+            const roomsData = rooms.map(room => ({
+                name: room.name,
+                type: room.type,
+                squareFootage: 100
+            }));
 
-                // Add appliances to room
-                for (const appliance of room.appliances) {
-                    await api.post(`/api/rooms/${roomResponse.data.id}/appliances`, appliance);
+            // Create all rooms at once
+            const roomsResponse = await api.post(`/api/homes/${homeId}/rooms`, {
+                rooms: roomsData
+            });
+
+            // Create appliances for each room
+            for (let i = 0; i < rooms.length; i++) {
+                const room = rooms[i];
+                const createdRoom = roomsResponse.data[i];
+
+                if (room.appliances.length > 0) {
+                    const appliancesData = room.appliances.map(app => ({
+                        name: app.type,
+                        wattage: app.wattage
+                    }));
+
+                    await api.post(`/api/homes/${homeId}/rooms/${createdRoom.id}/appliances`, {
+                        appliances: appliancesData
+                    });
                 }
             }
 
             navigate('/dashboard');
         } catch (error) {
             console.error('Setup error:', error);
+            console.error('Error details:', error.response?.data);
             alert('Failed to save configuration. Please try again.');
         } finally {
             setLoading(false);
