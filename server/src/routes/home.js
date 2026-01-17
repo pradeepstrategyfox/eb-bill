@@ -237,7 +237,15 @@ router.post('/:id/rooms/:roomId/appliances', [
 
         res.status(201).json(createdAppliances);
     } catch (error) {
-        console.error('Create appliances error:', error);
+        console.error('❌ Create appliances error:', error.message);
+        console.error('Error name:', error.name);
+        console.error('Error stack:', error.stack);
+        if (error.parent) {
+            console.error('SQL Error:', error.parent.message);
+        }
+        if (error.sql) {
+            console.error('SQL Query:', error.sql);
+        }
         res.status(500).json({ error: 'Failed to create appliances' });
     }
 });
