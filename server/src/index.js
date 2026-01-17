@@ -78,6 +78,53 @@ async function startServer() {
         await sequelize.sync({ alter: false, force: false });
         console.log('✓ Database tables synced');
 
+        // FIX: Add missing timestamp columns if they don't exist
+        console.log('🔧 Ensuring timestamp columns exist...');
+        try {
+            await sequelize.query(`
+                ALTER TABLE ps_users 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            await sequelize.query(`
+                ALTER TABLE ps_homes 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            await sequelize.query(`
+                ALTER TABLE ps_rooms 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            await sequelize.query(`
+                ALTER TABLE ps_appliances 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            await sequelize.query(`
+                ALTER TABLE ps_appliance_usage_logs 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            await sequelize.query(`
+                ALTER TABLE ps_meter_readings 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            await sequelize.query(`
+                ALTER TABLE ps_billing_cycles 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            await sequelize.query(`
+                ALTER TABLE ps_tariff_slabs 
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+            `);
+            console.log('✓ Timestamp columns verified');
+        } catch (err) {
+            console.log('⚠️  Timestamp migration warning:', err.message);
+        }
+
         // Auto-seed tariff slabs if they don't exist
         const TariffSlab = (await import('./models/TariffSlab.js')).default;
         const tariffCount = await TariffSlab.count();
