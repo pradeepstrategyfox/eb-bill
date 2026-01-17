@@ -8,7 +8,7 @@
         "start": "node src/index.js",
         "dev": "nodemon src/index.js",
         "migrate": "node src/migrations/run.js",
-        "seed": "node src/seeds/run.js",
+        "seed": "node src/seed.js",
         "test": "echo \"Tests not yet implemented\" && exit 0"
     },
     "keywords": [

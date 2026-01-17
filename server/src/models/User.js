@@ -31,9 +31,8 @@ const User = sequelize.define('User', {
     },
 }, {
     tableName: 'ps_users',
+    underscored: true,
     timestamps: true,
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
 });
 
 export default User;

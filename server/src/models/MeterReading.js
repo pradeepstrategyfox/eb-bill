@@ -41,7 +41,7 @@ const MeterReading = sequelize.define('MeterReading', {
     tableName: 'ps_meter_readings',
     underscored: true,
     timestamps: true,
-    createdAt: 'createdAt',
+    updatedAt: false,
 });
 
 // Associations

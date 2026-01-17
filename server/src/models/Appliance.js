@@ -40,9 +40,8 @@ const Appliance = sequelize.define('Appliance', {
     },
 }, {
     tableName: 'ps_appliances',
+    underscored: true,
     timestamps: true,
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
 });
 
 // Associations
