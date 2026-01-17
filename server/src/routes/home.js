@@ -138,4 +138,108 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+/**
+ * Add rooms to home
+ * POST /api/homes/:id/rooms
+ */
+router.post('/:id/rooms', [
+    body('rooms').isArray({ min: 1 }),
+    body('rooms.*.name').notEmpty(),
+    body('rooms.*.type').notEmpty(),
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        // Verify home ownership
+        const home = await Home.findOne({
+            where: {
+                id: req.params.id,
+                userId: req.userId,
+            },
+        });
+
+        if (!home) {
+            return res.status(404).json({ error: 'Home not found' });
+        }
+
+        const { rooms } = req.body;
+
+        // Create all rooms
+        const createdRooms = await Promise.all(
+            rooms.map(room => Room.create({
+                homeId: home.id,
+                name: room.name,
+                type: room.type,
+                squareFootage: room.squareFootage || 100,
+            }))
+        );
+
+        res.status(201).json(createdRooms);
+    } catch (error) {
+        console.error('Create rooms error:', error);
+        res.status(500).json({ error: 'Failed to create rooms' });
+    }
+});
+
+/**
+ * Add appliances to room
+ * POST /api/homes/:id/rooms/:roomId/appliances
+ */
+router.post('/:id/rooms/:roomId/appliances', [
+    body('appliances').isArray({ min: 1 }),
+    body('appliances.*.name').notEmpty(),
+    body('appliances.*.wattage').isInt({ min: 1 }),
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        // Verify home ownership
+        const home = await Home.findOne({
+            where: {
+                id: req.params.id,
+                userId: req.userId,
+            },
+        });
+
+        if (!home) {
+            return res.status(404).json({ error: 'Home not found' });
+        }
+
+        // Verify room belongs to home  
+        const room = await Room.findOne({
+            where: {
+                id: req.params.roomId,
+                homeId: home.id,
+            },
+        });
+
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+
+        const { appliances } = req.body;
+
+        // Create all appliances
+        const createdAppliances = await Promise.all(
+            appliances.map(appliance => Appliance.create({
+                roomId: room.id,
+                name: appliance.name,
+                wattage: appliance.wattage,
+                isOn: false,
+            }))
+        );
+
+        res.status(201).json(createdAppliances);
+    } catch (error) {
+        console.error('Create appliances error:', error);
+        res.status(500).json({ error: 'Failed to create appliances' });
+    }
+});
+
 export default router;
