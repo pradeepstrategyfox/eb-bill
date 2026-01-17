@@ -90,6 +90,7 @@ export default function SetupWizard() {
                 if (room.appliances.length > 0) {
                     const appliancesData = room.appliances.map(app => ({
                         name: app.type,
+                        type: app.type,
                         wattage: app.wattage
                     }));
 
