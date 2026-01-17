@@ -6,6 +6,7 @@ import './Auth.css';
 export default function Signup() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
+        name: '',
         email: '',
         password: '',
     });
@@ -27,7 +28,7 @@ export default function Signup() {
 
         try {
             const response = await api.post('/api/auth/register', {
-                name: formData.email.split('@')[0],
+                name: formData.name,
                 email: formData.email,
                 password: formData.password,
             });
@@ -57,7 +58,22 @@ export default function Signup() {
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
-                        <label htmlFor="email">Username (Email)</label>
+                        <label htmlFor="name">Name</label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            placeholder="Your name"
+                            required
+                            autoComplete="name"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="email">Email</label>
                         <input
                             type="email"
                             id="email"
