@@ -6,6 +6,10 @@
     justify-content: center;
     padding: 2rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    gap: 3rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 .auth-card {
@@ -14,7 +18,8 @@
     padding: 3rem;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     width: 100%;
-    max-width: 500px;
+    max-width: 480px;
+    flex-shrink: 0;
     animation: slideUp 0.5s ease-out;
 }
 
@@ -154,6 +159,43 @@
 
 .btn-block {
     width: 100%;
+}
+
+/* Auth Info Cards */
+.auth-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex: 1;
+    max-width: 450px;
+}
+
+.info-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.info-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.info-card h3 {
+    color: #1e293b;
+    margin: 0 0 0.75rem 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.info-card p {
+    color: #64748b;
+    margin: 0;
+    line-height: 1.6;
+    font-size: 0.95rem;
 }
 
 .spinner {

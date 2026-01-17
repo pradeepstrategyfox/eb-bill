@@ -3,6 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Validate DATABASE_URL exists
+if (!process.env.DATABASE_URL) {
+    console.error('❌ ERROR: DATABASE_URL environment variable is not set!');
+    console.error('Please set it in your environment configuration');
+    console.error('Example: postgresql://user:password@host:5432/database');
+    process.exit(1);
+}
+
 // PostgreSQL connection
 export const sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',

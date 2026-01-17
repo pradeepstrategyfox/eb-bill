@@ -6,23 +6,22 @@ All code is committed and pushed. Both Vercel and Render will auto-deploy.
 
 ---
 
-## 🚀 Quick Start After Deployment
+## 🚀 Automatic Deployment
 
-### 1. Backend Setup (Render)
+### Backend (Render)
 
-The backend will start automatically. After deployment, **run the seeding script once** to create tables and seed tariff data:
+**Everything happens automatically!**
 
-**In Render Dashboard:**
-1. Go to your service: `eb-bill-lkcc`
-2. Click "Shell" tab
-3. Run: `npm run seed`
+On first deployment, the server will:
+1. ✅ Connect to PostgreSQL database
+2. ✅ Create all 8 tables with `ps_` prefix
+3. ✅ Seed TNEB tariff slabs (6 pricing tiers)
+4. ✅ Connect to Redis
+5. ✅ Start the API server
 
-This will:
-- Create all 8 tables with `ps_` prefix
-- Seed TNEB tariff slabs
-- Safe to run multiple times (won't duplicate tariffs)
+**No manual steps required!**
 
-**Important Render Environment Variables:**
+**Required Render Environment Variables:**
 ```env
 NODE_ENV=production
 DATABASE_URL=postgresql://ai_mediation_db_user:3GxEODPhlgSeMDvM2heokGW6S4P2lON3@dpg-d5l1rakoud1c73e3kdeg-a.oregon-postgres.render.com/ai_mediation_db
@@ -32,7 +31,7 @@ JWT_SECRET=PowerSense2024SecretKey123!
 JWT_EXPIRES_IN=7d
 ```
 
-### 2. Frontend (Vercel)
+### Frontend (Vercel)
 
 Automatic deployment. No manual steps needed.
 
