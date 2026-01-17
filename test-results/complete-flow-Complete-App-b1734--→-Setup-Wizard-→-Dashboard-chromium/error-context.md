@@ -1,0 +1,414 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "Set Up Your Home" [level=1] [ref=e6]
+    - generic [ref=e7]:
+      - generic [ref=e8]: "1"
+      - generic [ref=e10]: "2"
+      - generic [ref=e12]: "3"
+  - generic [ref=e13]:
+    - heading "Add Appliances" [level=2] [ref=e14]
+    - generic [ref=e15]:
+      - heading "Living Room (hall)" [level=3] [ref=e16]
+      - generic [ref=e17]:
+        - generic [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: LED Bulb
+          - generic [ref=e20]: 9W
+          - generic [ref=e21]: ✓
+        - generic [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: CFL Bulb
+          - generic [ref=e24]: 15W
+          - generic [ref=e25]: ✓
+        - generic [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: Tube Light
+          - generic [ref=e28]: 40W
+        - generic [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]: Incandescent Bulb
+          - generic [ref=e31]: 60W
+        - generic [ref=e32] [cursor=pointer]:
+          - generic [ref=e33]: Normal Fan
+          - generic [ref=e34]: 75W
+        - generic [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]: BLDC Fan
+          - generic [ref=e37]: 35W
+        - generic [ref=e38] [cursor=pointer]:
+          - generic [ref=e39]: Table Fan
+          - generic [ref=e40]: 50W
+        - generic [ref=e41] [cursor=pointer]:
+          - generic [ref=e42]: 1 Ton 3 Star AC
+          - generic [ref=e43]: 1200W
+        - generic [ref=e44] [cursor=pointer]:
+          - generic [ref=e45]: 1 Ton 5 Star AC
+          - generic [ref=e46]: 900W
+        - generic [ref=e47] [cursor=pointer]:
+          - generic [ref=e48]: 1.5 Ton 3 Star AC
+          - generic [ref=e49]: 1700W
+        - generic [ref=e50] [cursor=pointer]:
+          - generic [ref=e51]: 1.5 Ton 5 Star AC
+          - generic [ref=e52]: 1500W
+        - generic [ref=e53] [cursor=pointer]:
+          - generic [ref=e54]: 2 Ton 3 Star AC
+          - generic [ref=e55]: 2200W
+        - generic [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]: 2 Ton 5 Star AC
+          - generic [ref=e58]: 2000W
+        - generic [ref=e59] [cursor=pointer]:
+          - generic [ref=e60]: Geyser 15L
+          - generic [ref=e61]: 2000W
+        - generic [ref=e62] [cursor=pointer]:
+          - generic [ref=e63]: Geyser 25L
+          - generic [ref=e64]: 2500W
+        - generic [ref=e65] [cursor=pointer]:
+          - generic [ref=e66]: Room Heater
+          - generic [ref=e67]: 2000W
+        - generic [ref=e68] [cursor=pointer]:
+          - generic [ref=e69]: Iron Box
+          - generic [ref=e70]: 1000W
+        - generic [ref=e71] [cursor=pointer]:
+          - generic [ref=e72]: Refrigerator Single Door
+          - generic [ref=e73]: 150W
+        - generic [ref=e74] [cursor=pointer]:
+          - generic [ref=e75]: Refrigerator Double Door
+          - generic [ref=e76]: 250W
+        - generic [ref=e77] [cursor=pointer]:
+          - generic [ref=e78]: Induction Cooktop
+          - generic [ref=e79]: 1500W
+        - generic [ref=e80] [cursor=pointer]:
+          - generic [ref=e81]: Microwave Oven
+          - generic [ref=e82]: 1200W
+        - generic [ref=e83] [cursor=pointer]:
+          - generic [ref=e84]: Mixer Grinder
+          - generic [ref=e85]: 500W
+        - generic [ref=e86] [cursor=pointer]:
+          - generic [ref=e87]: Electric Kettle
+          - generic [ref=e88]: 1500W
+        - generic [ref=e89] [cursor=pointer]:
+          - generic [ref=e90]: Toaster
+          - generic [ref=e91]: 800W
+        - generic [ref=e92] [cursor=pointer]:
+          - generic [ref=e93]: Rice Cooker
+          - generic [ref=e94]: 700W
+        - generic [ref=e95] [cursor=pointer]:
+          - generic [ref=e96]: Dishwasher
+          - generic [ref=e97]: 1800W
+        - generic [ref=e98] [cursor=pointer]:
+          - generic [ref=e99]: LED TV 32 inch
+          - generic [ref=e100]: 50W
+        - generic [ref=e101] [cursor=pointer]:
+          - generic [ref=e102]: LED TV 43 inch
+          - generic [ref=e103]: 80W
+        - generic [ref=e104] [cursor=pointer]:
+          - generic [ref=e105]: LED TV 55 inch
+          - generic [ref=e106]: 110W
+        - generic [ref=e107] [cursor=pointer]:
+          - generic [ref=e108]: Desktop Computer
+          - generic [ref=e109]: 150W
+        - generic [ref=e110] [cursor=pointer]:
+          - generic [ref=e111]: Laptop
+          - generic [ref=e112]: 65W
+        - generic [ref=e113] [cursor=pointer]:
+          - generic [ref=e114]: Monitor
+          - generic [ref=e115]: 40W
+        - generic [ref=e116] [cursor=pointer]:
+          - generic [ref=e117]: Printer
+          - generic [ref=e118]: 50W
+        - generic [ref=e119] [cursor=pointer]:
+          - generic [ref=e120]: WiFi Router
+          - generic [ref=e121]: 10W
+        - generic [ref=e122] [cursor=pointer]:
+          - generic [ref=e123]: Set Top Box
+          - generic [ref=e124]: 15W
+        - generic [ref=e125] [cursor=pointer]:
+          - generic [ref=e126]: Gaming Console
+          - generic [ref=e127]: 150W
+        - generic [ref=e128] [cursor=pointer]:
+          - generic [ref=e129]: Mobile Charger
+          - generic [ref=e130]: 18W
+        - generic [ref=e131] [cursor=pointer]:
+          - generic [ref=e132]: Tablet Charger
+          - generic [ref=e133]: 24W
+        - generic [ref=e134] [cursor=pointer]:
+          - generic [ref=e135]: Laptop Charger
+          - generic [ref=e136]: 65W
+        - generic [ref=e137] [cursor=pointer]:
+          - generic [ref=e138]: Washing Machine
+          - generic [ref=e139]: 500W
+        - generic [ref=e140] [cursor=pointer]:
+          - generic [ref=e141]: Vacuum Cleaner
+          - generic [ref=e142]: 1000W
+        - generic [ref=e143] [cursor=pointer]:
+          - generic [ref=e144]: Air Purifier
+          - generic [ref=e145]: 50W
+        - generic [ref=e146] [cursor=pointer]:
+          - generic [ref=e147]: Water Pump
+          - generic [ref=e148]: 750W
+    - generic [ref=e149]:
+      - heading "Room 2 (bedroom)" [level=3] [ref=e150]
+      - generic [ref=e151]:
+        - generic [ref=e152] [cursor=pointer]:
+          - generic [ref=e153]: LED Bulb
+          - generic [ref=e154]: 9W
+        - generic [ref=e155] [cursor=pointer]:
+          - generic [ref=e156]: CFL Bulb
+          - generic [ref=e157]: 15W
+        - generic [ref=e158] [cursor=pointer]:
+          - generic [ref=e159]: Tube Light
+          - generic [ref=e160]: 40W
+        - generic [ref=e161] [cursor=pointer]:
+          - generic [ref=e162]: Incandescent Bulb
+          - generic [ref=e163]: 60W
+        - generic [ref=e164] [cursor=pointer]:
+          - generic [ref=e165]: Normal Fan
+          - generic [ref=e166]: 75W
+        - generic [ref=e167] [cursor=pointer]:
+          - generic [ref=e168]: BLDC Fan
+          - generic [ref=e169]: 35W
+        - generic [ref=e170] [cursor=pointer]:
+          - generic [ref=e171]: Table Fan
+          - generic [ref=e172]: 50W
+        - generic [ref=e173] [cursor=pointer]:
+          - generic [ref=e174]: 1 Ton 3 Star AC
+          - generic [ref=e175]: 1200W
+        - generic [ref=e176] [cursor=pointer]:
+          - generic [ref=e177]: 1 Ton 5 Star AC
+          - generic [ref=e178]: 900W
+        - generic [ref=e179] [cursor=pointer]:
+          - generic [ref=e180]: 1.5 Ton 3 Star AC
+          - generic [ref=e181]: 1700W
+        - generic [ref=e182] [cursor=pointer]:
+          - generic [ref=e183]: 1.5 Ton 5 Star AC
+          - generic [ref=e184]: 1500W
+        - generic [ref=e185] [cursor=pointer]:
+          - generic [ref=e186]: 2 Ton 3 Star AC
+          - generic [ref=e187]: 2200W
+        - generic [ref=e188] [cursor=pointer]:
+          - generic [ref=e189]: 2 Ton 5 Star AC
+          - generic [ref=e190]: 2000W
+        - generic [ref=e191] [cursor=pointer]:
+          - generic [ref=e192]: Geyser 15L
+          - generic [ref=e193]: 2000W
+        - generic [ref=e194] [cursor=pointer]:
+          - generic [ref=e195]: Geyser 25L
+          - generic [ref=e196]: 2500W
+        - generic [ref=e197] [cursor=pointer]:
+          - generic [ref=e198]: Room Heater
+          - generic [ref=e199]: 2000W
+        - generic [ref=e200] [cursor=pointer]:
+          - generic [ref=e201]: Iron Box
+          - generic [ref=e202]: 1000W
+        - generic [ref=e203] [cursor=pointer]:
+          - generic [ref=e204]: Refrigerator Single Door
+          - generic [ref=e205]: 150W
+        - generic [ref=e206] [cursor=pointer]:
+          - generic [ref=e207]: Refrigerator Double Door
+          - generic [ref=e208]: 250W
+        - generic [ref=e209] [cursor=pointer]:
+          - generic [ref=e210]: Induction Cooktop
+          - generic [ref=e211]: 1500W
+        - generic [ref=e212] [cursor=pointer]:
+          - generic [ref=e213]: Microwave Oven
+          - generic [ref=e214]: 1200W
+        - generic [ref=e215] [cursor=pointer]:
+          - generic [ref=e216]: Mixer Grinder
+          - generic [ref=e217]: 500W
+        - generic [ref=e218] [cursor=pointer]:
+          - generic [ref=e219]: Electric Kettle
+          - generic [ref=e220]: 1500W
+        - generic [ref=e221] [cursor=pointer]:
+          - generic [ref=e222]: Toaster
+          - generic [ref=e223]: 800W
+        - generic [ref=e224] [cursor=pointer]:
+          - generic [ref=e225]: Rice Cooker
+          - generic [ref=e226]: 700W
+        - generic [ref=e227] [cursor=pointer]:
+          - generic [ref=e228]: Dishwasher
+          - generic [ref=e229]: 1800W
+        - generic [ref=e230] [cursor=pointer]:
+          - generic [ref=e231]: LED TV 32 inch
+          - generic [ref=e232]: 50W
+        - generic [ref=e233] [cursor=pointer]:
+          - generic [ref=e234]: LED TV 43 inch
+          - generic [ref=e235]: 80W
+        - generic [ref=e236] [cursor=pointer]:
+          - generic [ref=e237]: LED TV 55 inch
+          - generic [ref=e238]: 110W
+        - generic [ref=e239] [cursor=pointer]:
+          - generic [ref=e240]: Desktop Computer
+          - generic [ref=e241]: 150W
+        - generic [ref=e242] [cursor=pointer]:
+          - generic [ref=e243]: Laptop
+          - generic [ref=e244]: 65W
+        - generic [ref=e245] [cursor=pointer]:
+          - generic [ref=e246]: Monitor
+          - generic [ref=e247]: 40W
+        - generic [ref=e248] [cursor=pointer]:
+          - generic [ref=e249]: Printer
+          - generic [ref=e250]: 50W
+        - generic [ref=e251] [cursor=pointer]:
+          - generic [ref=e252]: WiFi Router
+          - generic [ref=e253]: 10W
+        - generic [ref=e254] [cursor=pointer]:
+          - generic [ref=e255]: Set Top Box
+          - generic [ref=e256]: 15W
+        - generic [ref=e257] [cursor=pointer]:
+          - generic [ref=e258]: Gaming Console
+          - generic [ref=e259]: 150W
+        - generic [ref=e260] [cursor=pointer]:
+          - generic [ref=e261]: Mobile Charger
+          - generic [ref=e262]: 18W
+        - generic [ref=e263] [cursor=pointer]:
+          - generic [ref=e264]: Tablet Charger
+          - generic [ref=e265]: 24W
+        - generic [ref=e266] [cursor=pointer]:
+          - generic [ref=e267]: Laptop Charger
+          - generic [ref=e268]: 65W
+        - generic [ref=e269] [cursor=pointer]:
+          - generic [ref=e270]: Washing Machine
+          - generic [ref=e271]: 500W
+        - generic [ref=e272] [cursor=pointer]:
+          - generic [ref=e273]: Vacuum Cleaner
+          - generic [ref=e274]: 1000W
+        - generic [ref=e275] [cursor=pointer]:
+          - generic [ref=e276]: Air Purifier
+          - generic [ref=e277]: 50W
+        - generic [ref=e278] [cursor=pointer]:
+          - generic [ref=e279]: Water Pump
+          - generic [ref=e280]: 750W
+    - generic [ref=e281]:
+      - heading "Room 3 (bedroom)" [level=3] [ref=e282]
+      - generic [ref=e283]:
+        - generic [ref=e284] [cursor=pointer]:
+          - generic [ref=e285]: LED Bulb
+          - generic [ref=e286]: 9W
+        - generic [ref=e287] [cursor=pointer]:
+          - generic [ref=e288]: CFL Bulb
+          - generic [ref=e289]: 15W
+        - generic [ref=e290] [cursor=pointer]:
+          - generic [ref=e291]: Tube Light
+          - generic [ref=e292]: 40W
+        - generic [ref=e293] [cursor=pointer]:
+          - generic [ref=e294]: Incandescent Bulb
+          - generic [ref=e295]: 60W
+        - generic [ref=e296] [cursor=pointer]:
+          - generic [ref=e297]: Normal Fan
+          - generic [ref=e298]: 75W
+        - generic [ref=e299] [cursor=pointer]:
+          - generic [ref=e300]: BLDC Fan
+          - generic [ref=e301]: 35W
+        - generic [ref=e302] [cursor=pointer]:
+          - generic [ref=e303]: Table Fan
+          - generic [ref=e304]: 50W
+        - generic [ref=e305] [cursor=pointer]:
+          - generic [ref=e306]: 1 Ton 3 Star AC
+          - generic [ref=e307]: 1200W
+        - generic [ref=e308] [cursor=pointer]:
+          - generic [ref=e309]: 1 Ton 5 Star AC
+          - generic [ref=e310]: 900W
+        - generic [ref=e311] [cursor=pointer]:
+          - generic [ref=e312]: 1.5 Ton 3 Star AC
+          - generic [ref=e313]: 1700W
+        - generic [ref=e314] [cursor=pointer]:
+          - generic [ref=e315]: 1.5 Ton 5 Star AC
+          - generic [ref=e316]: 1500W
+        - generic [ref=e317] [cursor=pointer]:
+          - generic [ref=e318]: 2 Ton 3 Star AC
+          - generic [ref=e319]: 2200W
+        - generic [ref=e320] [cursor=pointer]:
+          - generic [ref=e321]: 2 Ton 5 Star AC
+          - generic [ref=e322]: 2000W
+        - generic [ref=e323] [cursor=pointer]:
+          - generic [ref=e324]: Geyser 15L
+          - generic [ref=e325]: 2000W
+        - generic [ref=e326] [cursor=pointer]:
+          - generic [ref=e327]: Geyser 25L
+          - generic [ref=e328]: 2500W
+        - generic [ref=e329] [cursor=pointer]:
+          - generic [ref=e330]: Room Heater
+          - generic [ref=e331]: 2000W
+        - generic [ref=e332] [cursor=pointer]:
+          - generic [ref=e333]: Iron Box
+          - generic [ref=e334]: 1000W
+        - generic [ref=e335] [cursor=pointer]:
+          - generic [ref=e336]: Refrigerator Single Door
+          - generic [ref=e337]: 150W
+        - generic [ref=e338] [cursor=pointer]:
+          - generic [ref=e339]: Refrigerator Double Door
+          - generic [ref=e340]: 250W
+        - generic [ref=e341] [cursor=pointer]:
+          - generic [ref=e342]: Induction Cooktop
+          - generic [ref=e343]: 1500W
+        - generic [ref=e344] [cursor=pointer]:
+          - generic [ref=e345]: Microwave Oven
+          - generic [ref=e346]: 1200W
+        - generic [ref=e347] [cursor=pointer]:
+          - generic [ref=e348]: Mixer Grinder
+          - generic [ref=e349]: 500W
+        - generic [ref=e350] [cursor=pointer]:
+          - generic [ref=e351]: Electric Kettle
+          - generic [ref=e352]: 1500W
+        - generic [ref=e353] [cursor=pointer]:
+          - generic [ref=e354]: Toaster
+          - generic [ref=e355]: 800W
+        - generic [ref=e356] [cursor=pointer]:
+          - generic [ref=e357]: Rice Cooker
+          - generic [ref=e358]: 700W
+        - generic [ref=e359] [cursor=pointer]:
+          - generic [ref=e360]: Dishwasher
+          - generic [ref=e361]: 1800W
+        - generic [ref=e362] [cursor=pointer]:
+          - generic [ref=e363]: LED TV 32 inch
+          - generic [ref=e364]: 50W
+        - generic [ref=e365] [cursor=pointer]:
+          - generic [ref=e366]: LED TV 43 inch
+          - generic [ref=e367]: 80W
+        - generic [ref=e368] [cursor=pointer]:
+          - generic [ref=e369]: LED TV 55 inch
+          - generic [ref=e370]: 110W
+        - generic [ref=e371] [cursor=pointer]:
+          - generic [ref=e372]: Desktop Computer
+          - generic [ref=e373]: 150W
+        - generic [ref=e374] [cursor=pointer]:
+          - generic [ref=e375]: Laptop
+          - generic [ref=e376]: 65W
+        - generic [ref=e377] [cursor=pointer]:
+          - generic [ref=e378]: Monitor
+          - generic [ref=e379]: 40W
+        - generic [ref=e380] [cursor=pointer]:
+          - generic [ref=e381]: Printer
+          - generic [ref=e382]: 50W
+        - generic [ref=e383] [cursor=pointer]:
+          - generic [ref=e384]: WiFi Router
+          - generic [ref=e385]: 10W
+        - generic [ref=e386] [cursor=pointer]:
+          - generic [ref=e387]: Set Top Box
+          - generic [ref=e388]: 15W
+        - generic [ref=e389] [cursor=pointer]:
+          - generic [ref=e390]: Gaming Console
+          - generic [ref=e391]: 150W
+        - generic [ref=e392] [cursor=pointer]:
+          - generic [ref=e393]: Mobile Charger
+          - generic [ref=e394]: 18W
+        - generic [ref=e395] [cursor=pointer]:
+          - generic [ref=e396]: Tablet Charger
+          - generic [ref=e397]: 24W
+        - generic [ref=e398] [cursor=pointer]:
+          - generic [ref=e399]: Laptop Charger
+          - generic [ref=e400]: 65W
+        - generic [ref=e401] [cursor=pointer]:
+          - generic [ref=e402]: Washing Machine
+          - generic [ref=e403]: 500W
+        - generic [ref=e404] [cursor=pointer]:
+          - generic [ref=e405]: Vacuum Cleaner
+          - generic [ref=e406]: 1000W
+        - generic [ref=e407] [cursor=pointer]:
+          - generic [ref=e408]: Air Purifier
+          - generic [ref=e409]: 50W
+        - generic [ref=e410] [cursor=pointer]:
+          - generic [ref=e411]: Water Pump
+          - generic [ref=e412]: 750W
+    - generic [ref=e413]:
+      - button "← Back" [disabled] [ref=e414] [cursor=pointer]
+      - button "Saving..." [disabled] [ref=e415]
+```

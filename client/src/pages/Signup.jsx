@@ -26,20 +26,65 @@ export default function Signup() {
         setError('');
         setLoading(true);
 
+        // Client-side validation
+        if (!formData.name || !formData.name.trim()) {
+            setError('Please enter your name');
+            setLoading(false);
+            return;
+        }
+
+        if (!formData.email || !formData.email.trim()) {
+            setError('Please enter your email');
+            setLoading(false);
+            return;
+        }
+
+        if (!formData.password || formData.password.length < 6) {
+            setError('Password must be at least 6 characters');
+            setLoading(false);
+            return;
+        }
+
+        // Debug logging
+        console.log('📝 Submitting registration:', {
+            name: formData.name,
+            email: formData.email,
+            passwordLength: formData.password.length
+        });
+
         try {
-            const response = await api.post('/api/auth/register', {
-                name: formData.name,
-                email: formData.email,
+            const payload = {
+                name: formData.name.trim(),
+                email: formData.email.trim(),
                 password: formData.password,
-            });
+            };
+
+            console.log('📤 Sending payload:', payload);
+
+            const response = await api.post('/api/auth/register', payload);
+
+            console.log('✅ Registration successful:', response.data);
 
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
 
             navigate('/setup');
         } catch (err) {
-            console.error('Signup error:', err);
-            setError(err.response?.data?.error || 'Registration failed. Please try again.');
+            console.error('❌ Signup error:', err);
+
+            // Better error handling
+            if (err.response?.data?.errors) {
+                // Validation errors from backend
+                const validationErrors = err.response.data.errors;
+                const errorMsg = validationErrors.map(e => `${e.path}: ${e.msg}`).join(', ');
+                setError(errorMsg);
+            } else if (err.response?.data?.error) {
+                setError(err.response.data.error);
+            } else if (err.message) {
+                setError(`Error: ${err.message}`);
+            } else {
+                setError('Registration failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
