@@ -43,3 +43,8 @@ coverage/
 .cache/
 temp/
 tmp/
+
+# SQLite Database
+*.sqlite
+*.sqlite3
+*.db
