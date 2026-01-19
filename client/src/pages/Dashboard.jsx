@@ -147,10 +147,13 @@ export default function Dashboard() {
 
     const toggleAppliance = async (applianceId) => {
         try {
+            console.log('🔄 Toggling appliance:', applianceId);
             await api.patch(`/api/appliances/${applianceId}/toggle`);
-            fetchData(); // Refresh data
+            console.log('✅ Appliance toggled, refreshing data...');
+            await fetchData(); // Wait for refresh to complete
+            console.log('✅ Data refreshed');
         } catch (error) {
-            console.error('Error toggling appliance:', error);
+            console.error('❌ Error toggling appliance:', error);
         }
     };
 
