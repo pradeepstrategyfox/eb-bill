@@ -41,6 +41,12 @@ export default function MeterReading() {
         setSuccess('');
 
         try {
+            // Check if home is selected
+            if (!selectedHome || !selectedHome.id) {
+                setError('Home not found. Please complete setup first.');
+                return;
+            }
+
             // Submit to correct backend path
             await api.post(`/api/meter/homes/${selectedHome.id}/meter-readings`, {
                 readingValue: parseFloat(reading)

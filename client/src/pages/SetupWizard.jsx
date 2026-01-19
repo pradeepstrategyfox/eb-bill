@@ -44,18 +44,19 @@ export default function SetupWizard() {
                     });
 
                     // Populate rooms if they exist
-                    if (existingHome.rooms && existingHome.rooms.length > 0) {
-                        const formattedRooms = existingHome.rooms.map(room => ({
+                    const roomsData = existingHome.rooms || existingHome.Rooms || [];
+                    if (roomsData.length > 0) {
+                        const formattedRooms = roomsData.map(room => ({
                             name: room.name,
                             type: room.type,
-                            appliances: (room.appliances || []).map(app => ({
+                            appliances: (room.appliances || room.Appliances || []).map(app => ({
                                 name: app.name,
                                 type: app.type,
                                 wattage: app.wattage
                             }))
                         }));
                         setRooms(formattedRooms);
-                        console.log(`✅ Loaded ${formattedRooms.length} existing rooms`);
+                        console.log(`✅ Loaded ${formattedRooms.length} existing rooms with data:`, formattedRooms);
                     }
                 } else {
                     console.log('ℹ️ No existing home found - starting fresh');
