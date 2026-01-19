@@ -245,4 +245,4 @@ For issues or questions, contact the development team.
 
 ---
 
-**Built with ❤️ for Tamil Nadu households**
+**Built with ❤️ for Tamil Nadu households by Pradeep**
