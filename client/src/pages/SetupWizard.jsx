@@ -12,6 +12,7 @@ export default function SetupWizard() {
     // Form data
     const [homeData, setHomeData] = useState({ name: 'My Home', totalRooms: 3 });
     const [rooms, setRooms] = useState([]);
+    const [existingHomeId, setExistingHomeId] = useState(null); // Track existing home to prevent duplicates
 
     useEffect(() => {
         // Fetch appliance library
@@ -32,6 +33,9 @@ export default function SetupWizard() {
                 if (response.data && response.data.length > 0) {
                     const existingHome = response.data[0];
                     console.log('✅ Found existing home:', existingHome.name);
+
+                    // Store existing home ID to prevent duplicate creation
+                    setExistingHomeId(existingHome.id);
 
                     // Populate form with existing data
                     setHomeData({
@@ -106,9 +110,19 @@ export default function SetupWizard() {
     const handleFinish = async () => {
         setLoading(true);
         try {
-            // Create home
-            const homeResponse = await api.post('/api/homes', homeData);
-            const homeId = homeResponse.data.id;
+            let homeId;
+
+            if (existingHomeId) {
+                // Use existing home - don't create a new one!
+                homeId = existingHomeId;
+                console.log('✅ Using existing home ID:', homeId);
+            } else {
+                // Create new home only if one doesn't exist
+                console.log('📝 Creating new home...');
+                const homeResponse = await api.post('/api/homes', homeData);
+                homeId = homeResponse.data.id;
+                console.log('✅ Created new home with ID:', homeId);
+            }
 
             // Prepare rooms data
             const roomsData = rooms.map(room => ({

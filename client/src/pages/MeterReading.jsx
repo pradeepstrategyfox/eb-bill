@@ -20,8 +20,8 @@ export default function MeterReading() {
             const homesRes = await api.get('/api/homes');
             setHomes(homesRes.data);
 
-            if (homesRes.data.length > 0) {
-                const home = homes[0];
+            if (homesRes.data && homesRes.data.length > 0) {
+                const home = homesRes.data[0]; // ✅ Fixed: use API response data, not empty state
                 setSelectedHome(home);
 
                 // Fetch meter reading history - correct path
@@ -29,7 +29,8 @@ export default function MeterReading() {
                 setHistory(historyRes.data);
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('❌ Error fetching data:', error);
+            console.error('Error details:', error.response?.data);
         }
     };
 
@@ -48,7 +49,9 @@ export default function MeterReading() {
             setReading('');
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to submit reading');
+            console.error('❌ Meter reading error:', err);
+            const errorMsg = err.response?.data?.error || err.message || 'Failed to submit reading';
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
