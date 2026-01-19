@@ -1,7 +1,7 @@
 import express from 'express';
 import Home from '../models/Home.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { getConsumptionData, getTopConsumersWithCost } from '../services/ConsumptionEngine.js';
+import { getConsumptionData } from '../services/ConsumptionEngine.js';
 
 const router = express.Router();
 router.use(authMiddleware);
