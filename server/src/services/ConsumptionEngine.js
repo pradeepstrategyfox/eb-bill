@@ -4,7 +4,8 @@ import Room from '../models/Room.js';
 import Home from '../models/Home.js';
 import BillingCycle from '../models/BillingCycle.js';
 import MeterReading from '../models/MeterReading.js';
-import { getRedisClient } from '../config/redis.js';
+// Redis disabled - using REST alone
+// import { getRedisClient } from '../config/redis.js';
 import { Op } from 'sequelize';
 
 const CONSUMPTION_PREFIX = 'consumption:';
@@ -214,7 +215,14 @@ export async function getConsumptionData(homeId) {
         throw new Error('Home not found');
     }
 
-    const allAppliances = home.rooms.flatMap(room => room.appliances);
+    console.log(`🏠 Found home: ${home.name} with ${home.rooms?.length || 0} rooms`);
+    
+    const allAppliances = home.rooms?.flatMap(room => {
+        console.log(`   📍 Room: ${room.name} has ${room.appliances?.length || 0} appliances`);
+        return room.appliances || [];
+    }) || [];
+
+    console.log(`🔌 Total appliances found: ${allAppliances.length}`);
 
     // Calculate live load (appliances currently ON)
     const liveLoadWatts = allAppliances
@@ -281,6 +289,20 @@ export async function getConsumptionData(homeId) {
     console.log(`   This Cycle: ${cycleConsumption.totalKwh.toFixed(4)} kWh`);
     console.log(`========================================================\n`);
 
+    // Prepare rooms and appliances for the frontend
+    const roomsData = home.rooms.map(room => ({
+        id: room.id,
+        name: room.name,
+        type: room.type,
+        appliances: room.appliances.map(app => ({
+            id: app.id,
+            name: app.name,
+            type: app.type,
+            powerRating: app.wattage,
+            status: app.isOn
+        }))
+    }));
+
     // Return comprehensive data
     return {
         // Frontend-expected field names
@@ -288,6 +310,7 @@ export async function getConsumptionData(homeId) {
         today: Math.round(todayConsumption.totalKwh * 100) / 100,
         cycleUsage: Math.round(cycleConsumption.totalKwh * 100) / 100,
         activeAppliances: activeApplianceCount,
+        rooms: roomsData,
 
         // New fields for current meter reading
         lastMeterReading: lastMeterReading ? {
@@ -314,9 +337,142 @@ export async function getConsumptionData(homeId) {
     };
 }
 
+/**
+ * Get top energy consumers with cost breakdown
+ * Used by the insights endpoint
+ */
+export async function getTopConsumersWithCost(homeId) {
+    console.log(`\n========== Getting Top Consumers for Home ${homeId} ==========`);
+
+    // Get all appliances for the home
+    const home = await Home.findByPk(homeId, {
+        include: [{
+            model: Room,
+            as: 'rooms',
+            include: [{
+                model: Appliance,
+                as: 'appliances',
+            }],
+        }],
+    });
+
+    if (!home) {
+        throw new Error('Home not found');
+    }
+
+    const allAppliances = home.rooms.flatMap(room => 
+        room.appliances.map(appliance => ({
+            ...appliance.toJSON(),
+            roomName: room.name,
+        }))
+    );
+
+    if (allAppliances.length === 0) {
+        return [];
+    }
+
+    const applianceIds = allAppliances.map(a => a.id);
+
+    // Get billing cycle start date
+    const activeCycle = await BillingCycle.findOne({
+        where: { homeId, isActive: true },
+    });
+
+    const cycleStart = activeCycle ? new Date(activeCycle.startDate) : new Date();
+    const now = new Date();
+
+    // Get all completed usage logs for this billing cycle
+    const usageLogs = await ApplianceUsageLog.findAll({
+        where: {
+            applianceId: { [Op.in]: applianceIds },
+            turnedOffAt: { [Op.not]: null },
+            turnedOnAt: { [Op.gte]: cycleStart },
+        },
+    });
+
+    // Calculate consumption per appliance
+    const consumptionMap = new Map();
+
+    // Initialize with all appliances
+    for (const appliance of allAppliances) {
+        consumptionMap.set(appliance.id, {
+            id: appliance.id,
+            name: appliance.name,
+            roomName: appliance.roomName,
+            wattage: appliance.wattage,
+            totalKwh: 0,
+            totalSeconds: 0,
+            isOn: appliance.isOn,
+        });
+    }
+
+    // Sum up completed usage logs
+    for (const log of usageLogs) {
+        const entry = consumptionMap.get(log.applianceId);
+        if (entry) {
+            entry.totalKwh += log.energyConsumedKwh || 0;
+            entry.totalSeconds += log.durationSeconds || 0;
+        }
+    }
+
+    // Add current active usage for appliances that are ON
+    for (const appliance of allAppliances) {
+        if (appliance.isOn) {
+            const activeLog = await ApplianceUsageLog.findOne({
+                where: {
+                    applianceId: appliance.id,
+                    turnedOffAt: null,
+                },
+                order: [['turnedOnAt', 'DESC']],
+            });
+
+            if (activeLog) {
+                const turnedOnAt = new Date(activeLog.turnedOnAt);
+                const effectiveStart = turnedOnAt > cycleStart ? turnedOnAt : cycleStart;
+                const durationSeconds = Math.floor((now - effectiveStart) / 1000);
+                const energyKwh = (appliance.wattage / 1000) * (durationSeconds / 3600);
+
+                const entry = consumptionMap.get(appliance.id);
+                if (entry) {
+                    entry.totalKwh += energyKwh;
+                    entry.totalSeconds += durationSeconds;
+                }
+            }
+        }
+    }
+
+    // Convert to array and sort by consumption
+    const consumers = Array.from(consumptionMap.values())
+        .filter(c => c.totalKwh > 0 || c.isOn)
+        .sort((a, b) => b.totalKwh - a.totalKwh)
+        .slice(0, 10); // Top 10 consumers
+
+    // Calculate cost for each (using simple rate of ₹5/kWh as default)
+    const costPerKwh = 5; // TODO: Get from tariff slabs
+    const totalKwh = consumers.reduce((sum, c) => sum + c.totalKwh, 0);
+
+    const result = consumers.map(c => ({
+        id: c.id,
+        name: c.name,
+        roomName: c.roomName,
+        wattage: c.wattage,
+        isOn: c.isOn,
+        totalKwh: Math.round(c.totalKwh * 1000) / 1000,
+        totalHours: Math.round(c.totalSeconds / 36) / 100, // Convert to hours with 2 decimal places
+        estimatedCost: Math.round(c.totalKwh * costPerKwh * 100) / 100,
+        percentage: totalKwh > 0 ? Math.round((c.totalKwh / totalKwh) * 100) : 0,
+    }));
+
+    console.log(`📊 Found ${result.length} top consumers`);
+    console.log(`========================================================\n`);
+
+    return result;
+}
+
 export default {
     toggleAppliance,
     getLastMeterReading,
     calculateAccumulatedConsumption,
     getConsumptionData,
+    getTopConsumersWithCost,
 };

@@ -15,7 +15,7 @@ router.use(authMiddleware);
 router.get('/:homeId/current', async (req, res) => {
     try {
         // Validate homeId parameter
-        if (!req.params.homeId || isNaN(req.params.homeId)) {
+        if (!req.params.homeId) {
             return res.status(400).json({ error: 'Invalid home ID' });
         }
 
@@ -81,7 +81,7 @@ router.get('/:homeId/current', async (req, res) => {
 router.get('/:homeId/history', async (req, res) => {
     try {
         // Validate homeId parameter
-        if (!req.params.homeId || isNaN(req.params.homeId)) {
+        if (!req.params.homeId) {
             return res.status(400).json({ error: 'Invalid home ID' });
         }
 

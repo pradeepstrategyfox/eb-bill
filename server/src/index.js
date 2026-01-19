@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { sequelize } from './config/database.js';
-import { createRedisClient } from './config/redis.js';
+// Redis disabled - using REST alone
+// import { createRedisClient } from './config/redis.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -84,7 +85,8 @@ async function startServer() {
             await sequelize.query(`
                 ALTER TABLE ps_users 
                 ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                ADD COLUMN IF NOT EXISTS supabase_id VARCHAR(255) UNIQUE;
             `);
             await sequelize.query(`
                 ALTER TABLE ps_homes 
@@ -120,7 +122,12 @@ async function startServer() {
                 ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
             `);
-            console.log('✓ Timestamp columns verified');
+            // Make password_hash nullable for Supabase users
+            await sequelize.query(`
+                ALTER TABLE ps_users 
+                ALTER COLUMN password_hash DROP NOT NULL;
+            `);
+            console.log('✓ Timestamp columns and Supabase support verified');
         } catch (err) {
             console.log('⚠️  Timestamp migration warning:', err.message);
         }
@@ -145,10 +152,10 @@ async function startServer() {
             console.log(`✓ Tariff slabs already exist (${tariffCount} slabs)`);
         }
 
-        // Initialize Redis
-        const redis = createRedisClient();
-        await redis.connect();
-        console.log('✓ Redis connected successfully');
+        // Redis disabled - using REST alone
+        // const redis = createRedisClient();
+        // await redis.connect();
+        // console.log('✓ Redis connected successfully');
 
         // Start server
         app.listen(PORT, () => {

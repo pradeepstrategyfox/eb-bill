@@ -1,243 +1,462 @@
-/* Setup Wizard Styling */
 .wizard-container {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background: radial-gradient(circle at top right, rgba(0, 163, 255, 0.05), transparent),
+              radial-gradient(circle at bottom left, rgba(112, 0, 255, 0.05), transparent);
+  position: relative;
 }
 
-.wizard-card {
-    background: white;
-    border-radius: 1.5rem;
-    padding: 3rem;
-    max-width: 900px;
-    width: 100%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+.wizard-home-btn {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 48px;
+  height: 48px;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  z-index: 100;
 }
 
-.wizard-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.wizard-header h1 {
-    color: #1e293b;
-    margin-bottom: 2rem;
-}
-
-.step-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.step {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: #64748b;
-    transition: all 0.3s;
-}
-
-.step.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.step-line {
-    width: 80px;
-    height: 2px;
-    background: #e2e8f0;
-}
-
-.wizard-step {
-    min-height: 400px;
-}
-
-.wizard-step h2 {
-    color: #1e293b;
-    margin-bottom: 2rem;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    font-weight: 600;
-    color: #334155;
-    margin-bottom: 0.5rem;
-}
-
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 0.875rem 1rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 0.75rem;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-.rooms-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.room-card {
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    border: 2px solid #e2e8f0;
-}
-
-.room-name-input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
-}
-
-.room-type-select {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-}
-
-.room-section {
-    margin-bottom: 2rem;
-}
-
-.room-section h3 {
-    color: #1e293b;
-    margin-bottom: 1rem;
-}
-
-.appliances-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-.appliance-card {
-    background: #f8fafc;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    border: 2px solid #e2e8f0;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    position: relative;
-}
-
-.appliance-card:hover {
-    border-color: #667eea;
-    transform: translateY(-2px);
-}
-
-.appliance-card.selected {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-color: #667eea;
-    color: white;
-}
-
-.appliance-name {
-    font-weight: 600;
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-
-.appliance-power {
-    font-size: 0.75rem;
-    opacity: 0.8;
-}
-
-.check-mark {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    background: white;
-    color: #667eea;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.wizard-nav {
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-    margin-top: 2rem;
-}
-
-.btn-primary,
-.btn-secondary {
-    padding: 0.875rem 2rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-    font-size: 1rem;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-}
-
-.btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn-secondary {
-    background: #f1f5f9;
-    color: #334155;
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: #e2e8f0;
+.wizard-home-btn:hover {
+  background: rgba(0, 163, 255, 0.1);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {
-    .wizard-card {
-        padding: 2rem 1.5rem;
-    }
+  .wizard-home-btn {
+    top: 20px;
+    left: 20px;
+  }
+}
 
-    .rooms-grid,
-    .appliances-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
+.wizard-card {
+  width: 100%;
+  max-width: 1000px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-card);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .wizard-card {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.wizard-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.wizard-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 24px;
+  color: var(--text-main);
+}
+
+[data-theme='dark'] .wizard-header h1 {
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.step {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+  box-shadow: 0 0 20px rgba(0, 163, 255, 0.4);
+}
+
+.step-line {
+  height: 2px;
+  width: 40px;
+  background: var(--border-card);
+}
+
+.wizard-step {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-step h2 {
+  margin-bottom: 32px;
+  font-size: 1.5rem;
+  color: var(--text-main);
+}
+
+/* Rooms Grid */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.room-card {
+  background: var(--bg-dark);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.3s ease;
+}
+
+.room-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent-blue);
+}
+
+.room-name-input {
+  font-weight: 600;
+  font-size: 1.1rem;
+  background: transparent;
+  border-bottom: 2px solid var(--border-card);
+  color: var(--text-main);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  padding: 8px 0;
+}
+
+.room-name-input:focus {
+  border-bottom-color: var(--accent-blue);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Appliances Selection */
+.room-section {
+  margin-bottom: 40px;
+  background: var(--bg-dark);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid var(--border-card);
+}
+
+.room-section h3 {
+  margin-bottom: 20px;
+  color: var(--accent-blue);
+}
+
+/* Appliance Search Bar */
+.appliance-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.appliance-search-bar:focus-within {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+}
+
+.appliance-search-bar .search-icon {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.appliance-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.appliance-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Appliances Grid Container - Scrollable */
+.appliances-grid-container {
+  max-height: 180px; /* Approximately 2 rows */
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-right: -8px;
+}
+
+/* Custom Scrollbar */
+.appliances-grid-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.appliances-grid-container::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+  border-radius: 3px;
+}
+
+.appliances-grid-container::-webkit-scrollbar-thumb {
+  background: var(--border-card);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.appliances-grid-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-blue);
+}
+
+.appliances-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.appliance-card {
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.appliance-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent-blue);
+}
+
+.appliance-card.selected {
+  background: rgba(0, 163, 255, 0.1);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
+}
+
+.appliance-name {
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.appliance-power {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.check-mark {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--accent-blue);
+  font-weight: bold;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.btn-secondary {
+  background: var(--bg-dark);
+  color: var(--text-main);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Section Labels */
+.section-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+/* Selected Appliances */
+.selected-appliances {
+  margin-bottom: 24px;
+}
+
+.selected-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.selected-appliance-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 163, 255, 0.1);
+  border: 1px solid var(--accent-blue);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.1);
+}
+
+/* Custom Appliance Form */
+.add-custom-appliance {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-card);
+  border-radius: 16px;
+}
+
+.custom-appliance-form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.custom-input {
+  flex: 1;
+  min-width: 150px;
+  padding: 10px 14px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.custom-input.wattage-input {
+  flex: 0 0 100px;
+  min-width: 100px;
+}
+
+.custom-input:focus {
+  border-color: var(--accent-blue);
+  outline: none;
+}
+
+.add-custom-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-custom-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 163, 255, 0.3);
+}
+
+.add-custom-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .wizard-card {
+    padding: 24px;
+    border-radius: 0;
+  }
+  
+  .wizard-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-appliance-form {
+    flex-direction: column;
+  }
+
+  .custom-input,
+  .custom-input.wattage-input {
+    width: 100%;
+    flex: none;
+  }
+
+  .add-custom-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

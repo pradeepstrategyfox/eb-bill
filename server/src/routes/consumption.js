@@ -1,7 +1,7 @@
 import express from 'express';
 import Home from '../models/Home.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { getConsumptionData } from '../services/ConsumptionEngine.js';
+import { getConsumptionData, getTopConsumersWithCost } from '../services/ConsumptionEngine.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -13,7 +13,7 @@ router.use(authMiddleware);
 router.get('/:homeId/live', async (req, res) => {
     try {
         // Validate homeId parameter
-        if (!req.params.homeId || isNaN(req.params.homeId)) {
+        if (!req.params.homeId) {
             return res.status(400).json({ error: 'Invalid home ID' });
         }
 
@@ -62,7 +62,7 @@ router.get('/:homeId/live', async (req, res) => {
 router.get('/:homeId/insights', async (req, res) => {
     try {
         // Validate homeId parameter
-        if (!req.params.homeId || isNaN(req.params.homeId)) {
+        if (!req.params.homeId) {
             return res.status(400).json({ error: 'Invalid home ID' });
         }
 

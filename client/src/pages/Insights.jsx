@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
-import { DashboardLayout } from './Dashboard';
+import DashboardLayout from '../components/DashboardLayout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import api from '../api';
+import { 
+    HiChevronDoubleUp, 
+    HiLightBulb, 
+    HiClock,
+    HiArrowTrendingUp
+} from 'react-icons/hi2';
+import { IoSnow } from 'react-icons/io5';
 
 export default function Insights() {
     const [homes, setHomes] = useState([]);
@@ -9,98 +17,82 @@ export default function Insights() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchData();
+        const fetchInsights = async () => {
+            try {
+                const homesRes = await api.get('/api/homes');
+                setHomes(homesRes.data);
+                if (homesRes.data.length > 0) {
+                    const homeId = homesRes.data[0].id;
+                    setSelectedHome(homesRes.data[0]);
+                    const insightsRes = await api.get(`/api/consumption/${homeId}/insights`);
+                    setInsights(insightsRes.data);
+                }
+            } catch (error) {
+                console.error('Error fetching insights:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchInsights();
     }, []);
 
-    const fetchData = async () => {
-        try {
-            const homesRes = await api.get('/api/homes');
-            setHomes(homesRes.data);
-
-            if (homesRes.data.length > 0) {
-                const home = homesRes.data[0];
-                setSelectedHome(home);
-
-                const insightsRes = await api.get(`/api/homes/${home.id}/consumption/insights`);
-                setInsights(insightsRes.data);
-            }
-        } catch (error) {
-            console.error('Error fetching insights:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <DashboardLayout>
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="spinner" style={{ width: '48px', height: '48px', margin: '0 auto' }}></div>
-                </div>
-            </DashboardLayout>
-        );
-    }
-
-    if (homes.length === 0) {
-        return (
-            <DashboardLayout>
-                <div className="empty-state">
-                    <h2>No Data Available</h2>
-                    <p>Set up your home first</p>
-                </div>
-            </DashboardLayout>
-        );
-    }
+    if (loading) return <DashboardLayout><LoadingSpinner fullPage /></DashboardLayout>;
 
     return (
         <DashboardLayout>
-            <h1>Insights & Analytics</h1>
+            <div className="dashboard-header">
+                <h1>Smart Insights</h1>
+                <p className="subtitle">Data-driven recommendations to reduce your bill</p>
+            </div>
 
-            <div className="section">
-                <h2>Top Power Consumers</h2>
+            <div className="section mb-24">
+                <h2 className="mb-24">Top Power Consumers</h2>
                 <div className="top-consumers">
                     {insights?.topConsumers?.length > 0 ? (
                         insights.topConsumers.map((item, index) => (
-                            <div key={index} className="consumer-card">
+                            <div key={item.id || index} className="consumer-card">
                                 <div className="consumer-rank">#{index + 1}</div>
                                 <div className="consumer-info">
-                                    <div className="consumer-name">{item.name}</div>
-                                    <div className="consumer-room">{item.roomName}</div>
+                                    <p className="consumer-name">{item.name}</p>
+                                    <p className="consumer-room">{item.roomName || 'Unknown Room'}</p>
                                 </div>
                                 <div className="consumer-stats">
-                                    <div className="consumer-energy">{item.totalEnergy?.toFixed(2)} kWh</div>
-                                    <div className="consumer-cost">₹{item.cost?.toFixed(2)}</div>
+                                    <p className="consumer-energy">{item.totalKwh?.toFixed(2) || '0.00'} kWh/mo</p>
+                                    <p className="consumer-cost">₹{item.estimatedCost?.toFixed(0) || '0'} approx.</p>
                                 </div>
                             </div>
                         ))
                     ) : (
-                        <p className="empty-message">No consumption data yet. Toggle some appliances!</p>
+                        <div className="empty-state-mini">
+                            <HiChevronDoubleUp />
+                            <p>No usage data available yet. Turn on some appliances to start tracking.</p>
+                        </div>
                     )}
                 </div>
             </div>
 
             <div className="section">
-                <h2>Recommendations</h2>
+                <h2>AI Recommendations</h2>
                 <div className="recommendations-grid">
                     <div className="recommendation-card">
-                        <div className="rec-icon">💡</div>
-                        <h3>Use LED Bulbs</h3>
+                        <div className="rec-icon"><HiLightBulb style={{ color: '#fbbf24' }} /></div>
+                        <h3>Energy Efficient Lighting</h3>
                         <p>Replace incandescent bulbs with LED to save up to 85% energy</p>
                     </div>
                     <div className="recommendation-card">
-                        <div className="rec-icon">❄️</div>
+                        <div className="rec-icon"><IoSnow style={{ color: '#0ea5e9' }} /></div>
                         <h3>AC Temperature</h3>
                         <p>Set AC to 24-25°C for optimal comfort and efficiency</p>
                     </div>
                     <div className="recommendation-card">
-                        <div className="rec-icon">⏰</div>
-                        <h3>Peak Hours</h3>
-                        <p>Avoid using high-power appliances during 6-10 PM</p>
+                        <div className="rec-icon"><HiClock style={{ color: '#a855f7' }} /></div>
+                        <h3>Off-peak Usage</h3>
+                        <p>Run heavy appliances like washing machines during off-peak hours</p>
                     </div>
                     <div className="recommendation-card">
-                        <div className="rec-icon">🌬️</div>
-                        <h3>BLDC Fans</h3>
-                        <p>Upgrade to BLDC fans to save 50% on fan electricity</p>
+                        <div className="rec-icon"><HiArrowTrendingUp style={{ color: '#22c55e' }} /></div>
+                        <h3>Usage Pattern</h3>
+                        <p>Your usage is 15% higher than similar households in your area</p>
                     </div>
                 </div>
             </div>

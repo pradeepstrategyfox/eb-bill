@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { HiHome, HiPlus, HiXMark, HiMagnifyingGlass } from 'react-icons/hi2';
 import api from '../api';
 import './SetupWizard.css';
 
@@ -47,16 +48,21 @@ export default function SetupWizard() {
                     const roomsData = existingHome.rooms || existingHome.Rooms || [];
                     if (roomsData.length > 0) {
                         const formattedRooms = roomsData.map(room => ({
+                            id: room.id,
                             name: room.name,
                             type: room.type,
                             appliances: (room.appliances || room.Appliances || []).map(app => ({
+                                id: app.id,
                                 name: app.name,
-                                type: app.type,
-                                wattage: app.wattage
+                                // Use type if available, otherwise use name (for library matching)
+                                type: app.type || app.name,
+                                wattage: app.wattage,
+                                isExisting: true // Mark as existing appliance
                             }))
                         }));
                         setRooms(formattedRooms);
-                        console.log(`✅ Loaded ${formattedRooms.length} existing rooms with data:`, formattedRooms);
+                        console.log(`✅ Loaded ${formattedRooms.length} existing rooms with appliances:`, 
+                            formattedRooms.map(r => ({ name: r.name, appliances: r.appliances.length })));
                     }
                 } else {
                     console.log('ℹ️ No existing home found - starting fresh');
@@ -72,7 +78,34 @@ export default function SetupWizard() {
     }, []);
 
     const handleHomeSubmit = () => {
-        // Initialize rooms based on count
+        // Check if we already have rooms loaded (from existing home)
+        if (rooms.length > 0) {
+            // If total rooms changed, adjust the rooms array
+            if (rooms.length !== homeData.totalRooms) {
+                const newRooms = [...rooms];
+                
+                if (homeData.totalRooms > rooms.length) {
+                    // Add new rooms
+                    for (let i = rooms.length; i < homeData.totalRooms; i++) {
+                        newRooms.push({
+                            name: `Room ${i + 1}`,
+                            type: 'bedroom',
+                            appliances: []
+                        });
+                    }
+                } else {
+                    // Remove extra rooms
+                    newRooms.splice(homeData.totalRooms);
+                }
+                
+                setRooms(newRooms);
+            }
+            // If count is the same, keep existing rooms with their appliances
+            setStep(2);
+            return;
+        }
+
+        // Initialize rooms only if we don't have any (fresh setup)
         const initialRooms = [];
         for (let i = 0; i < homeData.totalRooms; i++) {
             initialRooms.push({
@@ -108,6 +141,57 @@ export default function SetupWizard() {
         setRooms(newRooms);
     };
 
+    // Custom appliance form state
+    const [customApplianceForm, setCustomApplianceForm] = useState({});
+
+    // Search state for common appliances
+    const [applianceSearch, setApplianceSearch] = useState({});
+
+    const initCustomForm = (roomIndex) => {
+        if (!customApplianceForm[roomIndex]) {
+            setCustomApplianceForm(prev => ({
+                ...prev,
+                [roomIndex]: { name: '', wattage: '' }
+            }));
+        }
+    };
+
+    const updateCustomForm = (roomIndex, field, value) => {
+        setCustomApplianceForm(prev => ({
+            ...prev,
+            [roomIndex]: {
+                ...prev[roomIndex],
+                [field]: value
+            }
+        }));
+    };
+
+    const addCustomAppliance = (roomIndex) => {
+        const form = customApplianceForm[roomIndex];
+        if (!form?.name || !form?.wattage) return;
+
+        const newRooms = [...rooms];
+        newRooms[roomIndex].appliances.push({
+            name: form.name,
+            type: form.name.toLowerCase().replace(/\s+/g, '_'),
+            wattage: parseInt(form.wattage),
+            isCustom: true
+        });
+        setRooms(newRooms);
+
+        // Reset form
+        setCustomApplianceForm(prev => ({
+            ...prev,
+            [roomIndex]: { name: '', wattage: '' }
+        }));
+    };
+
+    const removeAppliance = (roomIndex, applianceIndex) => {
+        const newRooms = [...rooms];
+        newRooms[roomIndex].appliances.splice(applianceIndex, 1);
+        setRooms(newRooms);
+    };
+
     const handleFinish = async () => {
         setLoading(true);
         try {
@@ -117,6 +201,19 @@ export default function SetupWizard() {
                 // Use existing home - don't create a new one!
                 homeId = existingHomeId;
                 console.log('✅ Using existing home ID:', homeId);
+
+                // Update home name if changed
+                await api.put(`/api/homes/${homeId}`, homeData);
+
+                // Delete existing rooms (this will cascade to delete appliances)
+                const currentHome = await api.get(`/api/homes/${homeId}`);
+                const existingRooms = currentHome.data.rooms || [];
+                
+                console.log(`🗑️ Deleting ${existingRooms.length} existing rooms...`);
+                for (const room of existingRooms) {
+                    await api.delete(`/api/rooms/${room.id}`);
+                }
+                console.log('✅ Existing rooms deleted');
             } else {
                 // Create new home only if one doesn't exist
                 console.log('📝 Creating new home...');
@@ -137,6 +234,8 @@ export default function SetupWizard() {
                 rooms: roomsData
             });
 
+            console.log(`✅ Created ${roomsResponse.data.length} rooms`);
+
             // Create appliances for each room
             for (let i = 0; i < rooms.length; i++) {
                 const room = rooms[i];
@@ -153,13 +252,13 @@ export default function SetupWizard() {
                         }
 
                         return {
-                            name: applianceType,
+                            name: app.name || applianceType,
                             type: applianceType,
                             wattage: app.wattage || 100 // Default to 100W if missing
                         };
                     });
 
-                    console.log(`📤 Creating ${appliancesData.length} appliances for ${room.name}:`, appliancesData);
+                    console.log(`📤 Creating ${appliancesData.length} appliances for ${room.name}`);
 
                     await api.post(`/api/homes/${homeId}/rooms/${createdRoom.id}/appliances`, {
                         appliances: appliancesData
@@ -193,9 +292,12 @@ export default function SetupWizard() {
 
     return (
         <div className="wizard-container">
+            <Link to="/dashboard" className="wizard-home-btn" title="Back to Dashboard">
+                <HiHome />
+            </Link>
             <div className="wizard-card">
                 <div className="wizard-header">
-                    <h1>Set Up Your Home</h1>
+                    <h1>{existingHomeId ? 'Edit Your Home' : 'Set Up Your Home'}</h1>
                     <div className="step-indicator">
                         <div className={`step ${step >= 1 ? 'active' : ''}`}>1</div>
                         <div className="step-line"></div>
@@ -273,33 +375,107 @@ export default function SetupWizard() {
                 {step === 3 && (
                     <div className="wizard-step">
                         <h2>Add Appliances</h2>
-                        {rooms.map((room, roomIndex) => (
-                            <div key={roomIndex} className="room-section">
-                                <h3>{room.name} ({room.type})</h3>
-                                <div className="appliances-grid">
-                                    {appliances.map((appliance, appIndex) => {
-                                        const isSelected = room.appliances.some(a => a.type === appliance.type);
-                                        return (
-                                            <div
-                                                key={appIndex}
-                                                className={`appliance-card ${isSelected ? 'selected' : ''}`}
-                                                onClick={() => toggleAppliance(roomIndex, appliance)}
-                                            >
-                                                <div className="appliance-name">{appliance.type}</div>
-                                                <div className="appliance-power">{appliance.wattage}W</div>
-                                                {isSelected && <div className="check-mark">✓</div>}
+                        {rooms.map((room, roomIndex) => {
+                            initCustomForm(roomIndex);
+                            return (
+                                <div key={roomIndex} className="room-section">
+                                    <h3>{room.name} ({room.type})</h3>
+                                    
+                                    {/* Selected Appliances */}
+                                    {room.appliances.length > 0 && (
+                                        <div className="selected-appliances">
+                                            <p className="section-label">Selected Appliances:</p>
+                                            <div className="selected-list">
+                                                {room.appliances.map((app, appIdx) => (
+                                                    <div key={appIdx} className="selected-appliance-tag">
+                                                        <span>{app.name} ({app.wattage}W)</span>
+                                                        <button 
+                                                            className="remove-btn"
+                                                            onClick={() => removeAppliance(roomIndex, appIdx)}
+                                                        >
+                                                            <HiXMark />
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    )}
+
+                                    {/* Add Custom Appliance */}
+                                    <div className="add-custom-appliance">
+                                        <p className="section-label">Add Custom Appliance:</p>
+                                        <div className="custom-appliance-form">
+                                            <input
+                                                type="text"
+                                                placeholder="Appliance name"
+                                                value={customApplianceForm[roomIndex]?.name || ''}
+                                                onChange={(e) => updateCustomForm(roomIndex, 'name', e.target.value)}
+                                                className="custom-input"
+                                            />
+                                            <input
+                                                type="number"
+                                                placeholder="Wattage"
+                                                value={customApplianceForm[roomIndex]?.wattage || ''}
+                                                onChange={(e) => updateCustomForm(roomIndex, 'wattage', e.target.value)}
+                                                className="custom-input wattage-input"
+                                            />
+                                            <button 
+                                                className="add-custom-btn"
+                                                onClick={() => addCustomAppliance(roomIndex)}
+                                                disabled={!customApplianceForm[roomIndex]?.name || !customApplianceForm[roomIndex]?.wattage}
+                                            >
+                                                <HiPlus /> Add
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Common Appliances Library */}
+                                    <p className="section-label">Or select from common appliances:</p>
+                                    <div className="appliance-search-bar">
+                                        <HiMagnifyingGlass className="search-icon" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search appliances..."
+                                            value={applianceSearch[roomIndex] || ''}
+                                            onChange={(e) => setApplianceSearch(prev => ({
+                                                ...prev,
+                                                [roomIndex]: e.target.value
+                                            }))}
+                                            className="appliance-search-input"
+                                        />
+                                    </div>
+                                    <div className="appliances-grid-container">
+                                        <div className="appliances-grid">
+                                            {appliances
+                                                .filter(appliance => 
+                                                    !applianceSearch[roomIndex] || 
+                                                    appliance.type.toLowerCase().includes(applianceSearch[roomIndex].toLowerCase())
+                                                )
+                                                .map((appliance, appIndex) => {
+                                                    const isSelected = room.appliances.some(a => a.type === appliance.type);
+                                                    return (
+                                                        <div
+                                                            key={appIndex}
+                                                            className={`appliance-card ${isSelected ? 'selected' : ''}`}
+                                                            onClick={() => toggleAppliance(roomIndex, appliance)}
+                                                        >
+                                                            <div className="appliance-name">{appliance.type}</div>
+                                                            <div className="appliance-power">{appliance.wattage}W</div>
+                                                            {isSelected && <div className="check-mark">✓</div>}
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         <div className="wizard-nav">
                             <button onClick={() => setStep(2)} className="btn-secondary" disabled={loading}>
                                 ← Back
                             </button>
                             <button onClick={handleFinish} className="btn-primary" disabled={loading}>
-                                {loading ? 'Saving...' : 'Finish Setup'}
+                                {loading ? 'Saving...' : (existingHomeId ? 'Save Changes' : 'Finish Setup')}
                             </button>
                         </div>
                     </div>

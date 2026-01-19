@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 import api from '../api';
 import './Auth.css';
 
@@ -45,46 +46,35 @@ export default function Signup() {
             return;
         }
 
-        // Debug logging
-        console.log('📝 Submitting registration:', {
-            name: formData.name,
-            email: formData.email,
-            passwordLength: formData.password.length
-        });
-
         try {
-            const payload = {
-                name: formData.name.trim(),
+            const { data, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email.trim(),
                 password: formData.password,
-            };
+                options: {
+                    data: {
+                        name: formData.name.trim(),
+                    }
+                }
+            });
 
-            console.log('📤 Sending payload:', payload);
+            if (signUpError) throw signUpError;
 
-            const response = await api.post('/api/auth/register', payload);
-
-            console.log('✅ Registration successful:', response.data);
-
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-
-            navigate('/setup');
+            // Note: If email confirmation is enabled in Supabase, 
+            // the session might be null initially.
+            if (data.session) {
+                localStorage.setItem('token', data.session.access_token);
+                localStorage.setItem('user', JSON.stringify({
+                    id: data.user.id,
+                    email: data.user.email,
+                    name: data.user.user_metadata?.name,
+                }));
+                navigate('/setup');
+            } else {
+                setError('Registration successful! Please check your email to confirm your account.');
+            }
         } catch (err) {
             console.error('❌ Signup error:', err);
-
-            // Better error handling
-            if (err.response?.data?.errors) {
-                // Validation errors from backend
-                const validationErrors = err.response.data.errors;
-                const errorMsg = validationErrors.map(e => `${e.path}: ${e.msg}`).join(', ');
-                setError(errorMsg);
-            } else if (err.response?.data?.error) {
-                setError(err.response.data.error);
-            } else if (err.message) {
-                setError(`Error: ${err.message}`);
-            } else {
-                setError('Registration failed. Please try again.');
-            }
+            setError(err.message || 'Registration failed. Please try again.');
         } finally {
             setLoading(false);
         }

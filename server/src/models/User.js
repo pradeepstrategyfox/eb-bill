@@ -7,6 +7,13 @@ const User = sequelize.define('User', {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
     },
+    supabaseId: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: true,
+        field: 'supabase_id',
+        comment: 'Supabase auth user ID',
+    },
     email: {
         type: DataTypes.STRING,
         unique: true,
@@ -22,7 +29,7 @@ const User = sequelize.define('User', {
     },
     passwordHash: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true, // Now optional since Supabase handles auth
         field: 'password_hash',
     },
     name: {
