@@ -3,6 +3,7 @@ import ApplianceUsageLog from '../models/ApplianceUsageLog.js';
 import Room from '../models/Room.js';
 import Home from '../models/Home.js';
 import BillingCycle from '../models/BillingCycle.js';
+import MeterReading from '../models/MeterReading.js';
 import { getRedisClient } from '../config/redis.js';
 import { Op } from 'sequelize';
 
@@ -31,6 +32,8 @@ export async function toggleAppliance(applianceId, isOn) {
             durationSeconds: 0,
             energyConsumedKwh: 0,
         });
+
+        console.log(`✅ Appliance ${appliance.name} turned ON at ${now.toISOString()}`);
     }
     // If turning OFF
     else {
@@ -56,6 +59,8 @@ export async function toggleAppliance(applianceId, isOn) {
             usageLog.durationSeconds = durationSeconds;
             usageLog.energyConsumedKwh = energyConsumedKwh;
             await usageLog.save();
+
+            console.log(`✅ Appliance ${appliance.name} turned OFF. Duration: ${durationHours.toFixed(2)}h, Energy: ${energyConsumedKwh.toFixed(4)} kWh`);
         }
     }
 
@@ -63,9 +68,136 @@ export async function toggleAppliance(applianceId, isOn) {
 }
 
 /**
- * Get real-time consumption data for a home
+ * Get the last (most recent) meter reading for a home
+ */
+export async function getLastMeterReading(homeId) {
+    const lastReading = await MeterReading.findOne({
+        where: { homeId },
+        order: [['readingDate', 'DESC']],
+    });
+
+    console.log(`📊 Last meter reading for home ${homeId}:`, lastReading ? `${lastReading.readingValue} kWh at ${lastReading.readingDate}` : 'None');
+    return lastReading;
+}
+
+/**
+ * Calculate accumulated consumption since last meter reading
+ */
+export async function calculateAccumulatedConsumption(homeId, sinceDate = null) {
+    // Get all appliances for this home
+    const home = await Home.findByPk(homeId, {
+        include: [{
+            model: Room,
+            as: 'rooms',
+            include: [{
+                model: Appliance,
+                as: 'appliances',
+            }],
+        }],
+    });
+
+    if (!home) {
+        throw new Error('Home not found');
+    }
+
+    const allAppliances = home.rooms.flatMap(room => room.appliances);
+    const applianceIds = allAppliances.map(a => a.id);
+
+    if (applianceIds.length === 0) {
+        return {
+            completedKwh: 0,
+            activeKwh: 0,
+            totalKwh: 0,
+            details: [],
+        };
+    }
+
+    // If no sinceDate provided, use last meter reading or billing cycle start
+    let startDate = sinceDate;
+    if (!startDate) {
+        const lastReading = await getLastMeterReading(homeId);
+        if (lastReading) {
+            startDate = lastReading.readingDate;
+        } else {
+            // Fallback to billing cycle start
+            const activeCycle = await BillingCycle.findOne({
+                where: { homeId, isActive: true },
+            });
+            startDate = activeCycle ? new Date(activeCycle.startDate) : new Date();
+        }
+    }
+
+    const now = new Date();
+    console.log(`⚡ Calculating consumption from ${startDate} to ${now}`);
+
+    // 1. Get all COMPLETED usage logs since startDate
+    const completedLogs = await ApplianceUsageLog.findAll({
+        where: {
+            applianceId: { [Op.in]: applianceIds },
+            turnedOffAt: { [Op.not]: null },
+            turnedOnAt: { [Op.gte]: startDate },
+        },
+    });
+
+    const completedKwh = completedLogs.reduce((sum, log) => sum + (log.energyConsumedKwh || 0), 0);
+    console.log(`   Completed logs: ${completedLogs.length}, Total: ${completedKwh.toFixed(4)} kWh`);
+
+    // 2. Calculate consumption from CURRENTLY ACTIVE appliances
+    const activeAppliances = allAppliances.filter(a => a.isOn);
+    let activeKwh = 0;
+    const activeDetails = [];
+
+    for (const appliance of activeAppliances) {
+        // Find the most recent open log for this appliance
+        const activeLog = await ApplianceUsageLog.findOne({
+            where: {
+                applianceId: appliance.id,
+                turnedOffAt: null,
+            },
+            order: [['turnedOnAt', 'DESC']],
+        });
+
+        if (activeLog) {
+            const turnedOnAt = new Date(activeLog.turnedOnAt);
+            // Only count if turned on after startDate
+            const effectiveStart = turnedOnAt > startDate ? turnedOnAt : startDate;
+            const durationSeconds = Math.floor((now - effectiveStart) / 1000);
+            const durationHours = durationSeconds / 3600;
+            const energyKwh = (appliance.wattage / 1000) * durationHours;
+
+            activeKwh += energyKwh;
+            activeDetails.push({
+                applianceName: appliance.name,
+                wattage: appliance.wattage,
+                turnedOnAt: turnedOnAt.toISOString(),
+                durationHours: durationHours.toFixed(2),
+                energyKwh: energyKwh.toFixed(4),
+            });
+
+            console.log(`   Active: ${appliance.name} (${appliance.wattage}W) - ${durationHours.toFixed(2)}h = ${energyKwh.toFixed(4)} kWh`);
+        }
+    }
+
+    const totalKwh = completedKwh + activeKwh;
+    console.log(`   TOTAL: ${totalKwh.toFixed(4)} kWh (Completed: ${completedKwh.toFixed(4)}, Active: ${activeKwh.toFixed(4)})`);
+
+    return {
+        completedKwh: Math.round(completedKwh * 10000) / 10000,
+        activeKwh: Math.round(activeKwh * 10000) / 10000,
+        totalKwh: Math.round(totalKwh * 10000) / 10000,
+        startDate: startDate,
+        endDate: now,
+        activeAppliances: activeDetails,
+    };
+}
+
+/**
+ * Get comprehensive consumption data for a home
+ * This is the MAIN function called by the API
  */
 export async function getConsumptionData(homeId) {
+    console.log(`\n========== Getting Consumption Data for Home ${homeId} ==========`);
+
     // Get all appliances for the home
     const home = await Home.findByPk(homeId, {
         include: [{
@@ -89,8 +221,12 @@ export async function getConsumptionData(homeId) {
         .filter(a => a.isOn)
         .reduce((sum, a) => sum + a.wattage, 0);
 
-    //Get active billing cycle
-    const activeCycle = await BillingCycle.findOne({
+    const activeApplianceCount = allAppliances.filter(a => a.isOn).length;
+
+    console.log(`🔌 Live Load: ${liveLoadWatts}W from ${activeApplianceCount} appliances`);
+
+    // Get or create active billing cycle
+    let activeCycle = await BillingCycle.findOne({
         where: {
             homeId,
             isActive: true,
@@ -103,7 +239,7 @@ export async function getConsumptionData(homeId) {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 60); // 60 days bi-monthly cycle
 
-        const newCycle = await BillingCycle.create({
+        activeCycle = await BillingCycle.create({
             homeId,
             startDate: startDate.toISOString().split('T')[0],
             endDate: endDate.toISOString().split('T')[0],
@@ -112,115 +248,75 @@ export async function getConsumptionData(homeId) {
             isActive: true,
         });
 
-        return {
-            // Frontend expects these exact field names
-            liveLoad: Math.round(liveLoadWatts),
-            today: 0,
-            cycleUsage: 0,
-            activeAppliances: allAppliances.filter(a => a.isOn).length,
-
-            // Additional data
-            liveLoadWatts: Math.round(liveLoadWatts),
-            todayKwh: 0,
-            cycleKwh: 0,
-            cycleStartDate: newCycle.startDate,
-            cycleEndDate: newCycle.endDate,
-            daysRemaining: 60,
-            topConsumers: [],
-        };
+        console.log(`✅ Created new billing cycle: ${activeCycle.startDate} to ${activeCycle.endDate}`);
     }
 
+    // Get last meter reading
+    const lastMeterReading = await getLastMeterReading(homeId);
+
+    // Calculate accumulated consumption since last meter reading
+    const accumulated = await calculateAccumulatedConsumption(homeId);
+
+    // Calculate current estimated meter reading
+    const lastReadingValue = lastMeterReading ? lastMeterReading.readingValue : 0;
+    const currentEstimatedReading = lastReadingValue + accumulated.totalKwh;
+
+    // Calculate today's consumption (since midnight)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayConsumption = await calculateAccumulatedConsumption(homeId, todayStart);
+
+    // Calculate cycle consumption (since billing cycle start)
     const cycleStart = new Date(activeCycle.startDate);
-    const cycleEnd = new Date(activeCycle.endDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const cycleConsumption = await calculateAccumulatedConsumption(homeId, cycleStart);
 
-    // Calculate days remaining
-    const daysRemaining = Math.max(0, Math.ceil((cycleEnd - new Date()) / (1000 * 60 * 60 * 24)));
+    const cycleEndDate = new Date(activeCycle.endDate);
+    const daysRemaining = Math.ceil((cycleEndDate - new Date()) / (1000 * 60 * 60 * 24));
 
-    // Get usage logs for the billing cycle
-    const cycleLogs = await ApplianceUsageLog.findAll({
-        where: {
-            applianceId: {
-                [Op.in]: allAppliances.map(a => a.id),
-            },
-            createdAt: {
-                [Op.gte]: cycleStart,
-            },
-        },
-        include: [{
-            model: Appliance,
-            as: 'appliance',
-            include: [{
-                model: Room,
-                as: 'room',
-            }],
-        }],
-    });
+    console.log(`📊 Summary:`);
+    console.log(`   Last Meter Reading: ${lastReadingValue} kWh at ${lastMeterReading?.readingDate || 'N/A'}`);
+    console.log(`   Accumulated Since: ${accumulated.totalKwh.toFixed(4)} kWh`);
+    console.log(`   Current Estimated: ${currentEstimatedReading.toFixed(4)} kWh`);
+    console.log(`   Today: ${todayConsumption.totalKwh.toFixed(4)} kWh`);
+    console.log(`   This Cycle: ${cycleConsumption.totalKwh.toFixed(4)} kWh`);
+    console.log(`========================================================\n`);
 
-    // Calculate today's consumption
-    const todayLogs = cycleLogs.filter(log => {
-        const logDate = new Date(log.createdAt);
-        logDate.setHours(0, 0, 0, 0);
-        return logDate.getTime() === today.getTime();
-    });
-
-    const todayKwh = todayLogs.reduce((sum, log) => sum + log.energyConsumedKwh, 0);
-
-    // Calculate  cycle consumption
-    const cycleKwh = cycleLogs.reduce((sum, log) => sum + log.energyConsumedKwh, 0);
-
-    // Calculate top consumers
-    const applianceConsumption = {};
-    cycleLogs.forEach(log => {
-        const appId = log.applianceId;
-        if (!applianceConsumption[appId]) {
-            applianceConsumption[appId] = {
-                applianceName: log.appliance.name,
-                roomName: log.appliance.room.name,
-                kwh: 0,
-            };
-        }
-        applianceConsumption[appId].kwh += log.energyConsumedKwh;
-    });
-
-    const topConsumers = Object.values(applianceConsumption)
-        .sort((a, b) => b.kwh - a.kwh)
-        .slice(0, 5)
-        .map(item => ({
-            ...item,
-            kwh: Math.round(item.kwh * 100) / 100,
-        }));
-
-    // Return data matching frontend Dashboard.jsx expectations
-    const activeApplianceCount = allAppliances.filter(a => a.isOn).length;
-
+    // Return comprehensive data
     return {
-        // Frontend expects these exact field names
-        liveLoad: Math.round(liveLoadWatts), // Watts
-        today: Math.round(todayKwh * 100) / 100, // kWh
-        cycleUsage: Math.round(cycleKwh * 100) / 100, // kWh
+        // Frontend-expected field names
+        liveLoad: Math.round(liveLoadWatts),
+        today: Math.round(todayConsumption.totalKwh * 100) / 100,
+        cycleUsage: Math.round(cycleConsumption.totalKwh * 100) / 100,
         activeAppliances: activeApplianceCount,
 
-        // Additional data for other pages
+        // New fields for current meter reading
+        lastMeterReading: lastMeterReading ? {
+            value: lastMeterReading.readingValue,
+            date: lastMeterReading.readingDate,
+            variance: lastMeterReading.variancePercentage,
+        } : null,
+        currentEstimatedReading: Math.round(currentEstimatedReading * 100) / 100,
+        accumulatedSinceLastReading: Math.round(accumulated.totalKwh * 100) / 100,
+
+        // Additional data
         liveLoadWatts: Math.round(liveLoadWatts),
-        todayKwh: Math.round(todayKwh * 100) / 100,
-        cycleKwh: Math.round(cycleKwh * 100) / 100,
+        todayKwh: Math.round(todayConsumption.totalKwh * 100) / 100,
+        cycleKwh: Math.round(cycleConsumption.totalKwh * 100) / 100,
         cycleStartDate: activeCycle.startDate,
         cycleEndDate: activeCycle.endDate,
-        daysRemaining,
-        topConsumers,
+        daysRemaining: daysRemaining,
+
+        // Active appliance details
+        activeApplianceDetails: accumulated.activeAppliances,
+
+        // Top consumers (based on cycle consumption)
+        topConsumers: [], // TODO: Implement if needed
     };
 }
 
-/**
- * Calculate cost for top consumers
- */
-export async function getTopConsumersWithCost(homeId, avgRate = 5) {
-    const consumptionData = await getConsumptionData(homeId);
-
-    return consumptionData.topConsumers.map(item => ({
-        ...item,
-        cost: Math.round(item.kwh * avgRate * 100) / 100,
-    }));
-}
+export default {
+    toggleAppliance,
+    getLastMeterReading,
+    calculateAccumulatedConsumption,
+    getConsumptionData,
+};
