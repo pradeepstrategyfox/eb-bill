@@ -14,6 +14,11 @@ router.use(authMiddleware);
  */
 router.get('/:homeId/current', async (req, res) => {
     try {
+        // Validate homeId parameter
+        if (!req.params.homeId || isNaN(req.params.homeId)) {
+            return res.status(400).json({ error: 'Invalid home ID' });
+        }
+
         const home = await Home.findOne({
             where: {
                 id: req.params.homeId,
@@ -25,10 +30,16 @@ router.get('/:homeId/current', async (req, res) => {
             return res.status(404).json({ error: 'Home not found' });
         }
 
+        // Get consumption data with error handling
         const consumptionData = await getConsumptionData(req.params.homeId);
-        const billProjection = await calculateTNEBBill(consumptionData.cycleKwh);
 
-        // Update billing cycle
+        // Safely get cycleKwh with fallback
+        const cycleKwh = consumptionData?.cycleKwh || consumptionData?.cycleUsage || 0;
+
+        // Calculate bill projection
+        const billProjection = await calculateTNEBBill(cycleKwh);
+
+        // Update billing cycle if it exists
         const activeCycle = await BillingCycle.findOne({
             where: {
                 homeId: req.params.homeId,
@@ -37,15 +48,29 @@ router.get('/:homeId/current', async (req, res) => {
         });
 
         if (activeCycle) {
-            activeCycle.totalUnits = consumptionData.cycleKwh;
-            activeCycle.estimatedBill = billProjection.estimatedBill;
+            activeCycle.totalUnits = cycleKwh;
+            activeCycle.estimatedBill = billProjection?.estimatedBill || billProjection?.totalBill || 0;
             await activeCycle.save();
         }
 
-        res.json(billProjection);
+        // Ensure response has expected fields
+        const response = {
+            totalBill: billProjection?.totalBill || 0,
+            slab: billProjection?.slab || 'No data',
+            ...billProjection, // Include all other fields
+        };
+
+        res.json(response);
     } catch (error) {
-        console.error('Get bill projection error:', error);
-        res.status(500).json({ error: 'Failed to calculate bill' });
+        console.error('❌ Get bill projection error:', error.message);
+        console.error('Stack:', error.stack);
+
+        // Return fallback data instead of crashing
+        res.status(500).json({
+            error: 'Failed to calculate bill',
+            totalBill: 0,
+            slab: 'Error calculating',
+        });
     }
 });
 
@@ -55,6 +80,11 @@ router.get('/:homeId/current', async (req, res) => {
  */
 router.get('/:homeId/history', async (req, res) => {
     try {
+        // Validate homeId parameter
+        if (!req.params.homeId || isNaN(req.params.homeId)) {
+            return res.status(400).json({ error: 'Invalid home ID' });
+        }
+
         const home = await Home.findOne({
             where: {
                 id: req.params.homeId,
@@ -71,10 +101,13 @@ router.get('/:homeId/history', async (req, res) => {
             order: [['startDate', 'DESC']],
         });
 
-        res.json(cycles);
+        res.json(cycles || []);
     } catch (error) {
-        console.error('Get billing history error:', error);
-        res.status(500).json({ error: 'Failed to get billing history' });
+        console.error('❌ Get billing history error:', error.message);
+        res.status(500).json({
+            error: 'Failed to get billing history',
+            cycles: [],
+        });
     }
 });
 

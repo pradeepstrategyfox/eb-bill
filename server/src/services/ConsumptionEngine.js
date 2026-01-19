@@ -113,6 +113,13 @@ export async function getConsumptionData(homeId) {
         });
 
         return {
+            // Frontend expects these exact field names
+            liveLoad: Math.round(liveLoadWatts),
+            today: 0,
+            cycleUsage: 0,
+            activeAppliances: allAppliances.filter(a => a.isOn).length,
+
+            // Additional data
             liveLoadWatts: Math.round(liveLoadWatts),
             todayKwh: 0,
             cycleKwh: 0,
@@ -185,7 +192,17 @@ export async function getConsumptionData(homeId) {
             kwh: Math.round(item.kwh * 100) / 100,
         }));
 
+    // Return data matching frontend Dashboard.jsx expectations
+    const activeApplianceCount = allAppliances.filter(a => a.isOn).length;
+
     return {
+        // Frontend expects these exact field names
+        liveLoad: Math.round(liveLoadWatts), // Watts
+        today: Math.round(todayKwh * 100) / 100, // kWh
+        cycleUsage: Math.round(cycleKwh * 100) / 100, // kWh
+        activeAppliances: activeApplianceCount,
+
+        // Additional data for other pages
         liveLoadWatts: Math.round(liveLoadWatts),
         todayKwh: Math.round(todayKwh * 100) / 100,
         cycleKwh: Math.round(cycleKwh * 100) / 100,

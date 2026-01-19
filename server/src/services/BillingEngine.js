@@ -6,6 +6,15 @@ import TariffSlab from '../models/TariffSlab.js';
  * @returns {Object} Bill breakdown with slab-wise calculation
  */
 export async function calculateTNEBBill(units) {
+    // Validate input
+    if (units === null || units === undefined || isNaN(units)) {
+        console.warn('⚠️ Invalid units provided to calculateTNEBBill:', units);
+        units = 0;
+    }
+
+    // Ensure non-negative
+    units = Math.max(0, units);
+
     // Get active tariff slabs
     const slabs = await TariffSlab.findAll({
         where: { isActive: true },
@@ -13,7 +22,18 @@ export async function calculateTNEBBill(units) {
     });
 
     if (slabs.length === 0) {
-        throw new Error('No active tariff slabs found');
+        console.error('❌ No active tariff slabs found in database!');
+        // Return default response when no slabs exist
+        return {
+            totalUnits: units,
+            totalBill: 0,
+            slab: 'No tariff data',
+            estimatedBill: 0,
+            slabBreakdown: [],
+            fixedCharges: 0,
+            totalSubsidy: 0,
+            nextSlabWarning: null,
+        };
     }
 
     let remainingUnits = units;
@@ -78,8 +98,20 @@ export async function calculateTNEBBill(units) {
         }
     }
 
+    // Determine current slab description
+    let currentSlabDesc = 'No slab';
+    for (let i = slabs.length - 1; i >= 0; i--) {
+        if (units >= slabs[i].minUnits) {
+            const maxUnit = slabs[i].maxUnits || '∞';
+            currentSlabDesc = `${slabs[i].minUnits}-${maxUnit} units @ ₹${slabs[i].ratePerUnit}/unit`;
+            break;
+        }
+    }
+
     return {
         totalUnits: units,
+        totalBill: Math.round(finalBill * 100) / 100, // Frontend expects this
+        slab: currentSlabDesc, // Frontend expects this
         estimatedBill: Math.round(finalBill * 100) / 100,
         slabBreakdown,
         fixedCharges,
