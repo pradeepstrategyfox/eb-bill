@@ -185,6 +185,77 @@ export default function Dashboard() {
         <DashboardLayout>
             <h1>Dashboard</h1>
 
+            {/* PROMINENT CURRENT METER READING CARD - Only show if we have a meter reading */}
+            {consumption?.lastMeterReading && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    padding: '2rem',
+                    borderRadius: '1rem',
+                    color: 'white',
+                    marginBottom: '2rem',
+                    boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
+                        <div style={{ flex: '1', minWidth: '250px' }}>
+                            <p style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Current Estimated Meter Reading</p>
+                            <h1 style={{ fontSize: '3rem', fontWeight: 'bold', margin: 0 }}>
+                                {consumption.currentEstimatedReading?.toFixed(2) || 0} <span style={{ fontSize: '1.5rem' }}>kWh</span>
+                            </h1>
+                            <p style={{ fontSize: '0.875rem', opacity: 0.8, marginTop: '0.5rem' }}>
+                                +{consumption.accumulatedSinceLastReading?.toFixed(4) || 0} kWh since last reading
+                            </p>
+                        </div>
+                        <div style={{ flex: '1', minWidth: '250px', textAlign: 'right' }}>
+                            <p style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Last Actual Reading</p>
+                            <h2 style={{ fontSize: '2rem', fontWeight: '600', margin: 0 }}>
+                                {consumption.lastMeterReading.value} kWh
+                            </h2>
+                            <p style={{ fontSize: '0.875rem', opacity: 0.8, marginTop: '0.5rem' }}>
+                                {new Date(consumption.lastMeterReading.date).toLocaleString()}
+                            </p>
+                            <Link to="/meter-reading" style={{
+                                display: 'inline-block',
+                                marginTop: '1rem',
+                                padding: '0.5rem 1.5rem',
+                                background: 'rgba(255,255,255,0.2)',
+                                borderRadius: '0.5rem',
+                                color: 'white',
+                                textDecoration: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                border: '1px solid rgba(255,255,255,0.3)',
+                            }}>
+                                📝 Submit New Reading
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Prompt to submit initial meter reading if none exists */}
+            {!consumption?.lastMeterReading && (
+                <div style={{
+                    background: '#fef3c7',
+                    border: '2px solid #fbbf24',
+                    padding: '1.5rem',
+                    borderRadius: '1rem',
+                    marginBottom: '2rem',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span style={{ fontSize: '2rem' }}>⚠️</span>
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ margin: '0 0 0.5rem 0', color: '#92400e' }}>No Meter Reading Submitted</h3>
+                            <p style={{ margin: '0 0 1rem 0', color: '#92400e' }}>
+                                To start tracking your consumption accurately, please submit your current electricity meter reading.
+                            </p>
+                            <Link to="/meter-reading" className="btn-primary">
+                                Submit Initial Reading
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="stats-grid">
                 <div className="stat-card">
                     <div className="stat-icon">⚡</div>
@@ -202,7 +273,7 @@ export default function Dashboard() {
                     <div className="stat-content">
                         <p className="stat-label">Today's Usage</p>
                         <h2 className="stat-value">{consumption?.today?.toFixed(2) || 0} kWh</h2>
-                        <p className="stat-change">This billing cycle</p>
+                        <p className="stat-change">Since midnight</p>
                     </div>
                 </div>
 
