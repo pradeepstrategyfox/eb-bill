@@ -94,8 +94,11 @@ export default function MeterReading() {
                             <input 
                                 type="number" 
                                 step="any"
+                                min="0"
                                 value={newReading}
-                                onChange={(e) => setNewReading(e.target.value)}
+                                onChange={(e) => setNewReading(e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0))}
+                                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                                onWheel={(e) => e.target.blur()}
                                 placeholder="Enter current reading from your meter"
                                 required
                             />

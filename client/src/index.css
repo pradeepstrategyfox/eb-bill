@@ -5,17 +5,19 @@
   --secondary-glow: none;
 
   /* Light Theme (Default) */
-  --bg-dark: #f8fafc;
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --border-card: rgba(0, 0, 0, 0.05);
-  --accent-blue: #00a3ff;
-  --accent-purple: #7000ff;
-  --text-main: #0f172a;
+  --bg-dark: #f0f4f8;
+  --bg-card: #ffffff;
+  --border-card: rgba(0, 0, 0, 0.06);
+  --accent-blue: #0088ff;
+  --accent-purple: #7c3aed;
+  --text-main: #1e293b;
   --text-muted: #64748b;
   
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(0, 0, 0, 0.05);
-  --glass-blur: 12px;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 16px;
+  --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -6px rgba(0, 0, 0, 0.1);
 
   font-family: 'Outfit', system-ui, sans-serif;
   color: var(--text-main);
@@ -32,6 +34,8 @@
   
   --glass-bg: rgba(15, 23, 42, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
+  --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -6px rgba(0, 0, 0, 0.4);
   
   --primary-glow: conic-gradient(
     from 180deg at 50% 50%,
@@ -63,7 +67,10 @@ body {
 }
 
 [data-theme='light'] body {
-  background-image: radial-gradient(circle at 50% -10%, rgba(0, 163, 255, 0.05) 0%, transparent 60%);
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(210, 100%, 93%, 1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(225, 100%, 95%, 1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(240, 100%, 93%, 1) 0, transparent 50%);
 }
 
 /* Glassmorphism Utilities */
@@ -131,6 +138,17 @@ input, select, textarea {
   outline: none;
 }
 
+/* Hide number input spinners */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 .input-with-icon {
   position: relative;
   display: flex;
@@ -153,8 +171,8 @@ input, select, textarea {
 
 input:focus, select:focus {
   border-color: var(--accent-blue);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 4px rgba(0, 163, 255, 0.1);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 4px rgba(0, 136, 255, 0.1), var(--card-shadow);
 }
 
 /* Premium Dropdown (Select) UI */
@@ -228,6 +246,12 @@ select option {
   padding: 32px;
   border: 1px solid var(--border-card);
   margin-bottom: 32px;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 
 .section h2 {
@@ -241,6 +265,7 @@ select option {
   border-radius: 20px;
   padding: 32px;
   margin-bottom: 32px;
+  box-shadow: var(--card-shadow);
 }
 
 .form-group {

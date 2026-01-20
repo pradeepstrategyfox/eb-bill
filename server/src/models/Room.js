@@ -24,7 +24,7 @@ const Room = sequelize.define('Room', {
         allowNull: false,
     },
     type: {
-        type: DataTypes.ENUM('bedroom', 'hall', 'kitchen', 'bathroom', 'balcony'),
+        type: DataTypes.STRING,
         allowNull: false,
     },
     squareFootage: {

@@ -1,19 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { HiHome, HiPlus, HiXMark, HiMagnifyingGlass } from 'react-icons/hi2';
+import { HiHome, HiPlus, HiXMark, HiMagnifyingGlass, HiArrowLeft, HiArrowRight } from 'react-icons/hi2';
 import api from '../api';
 import './SetupWizard.css';
 
 export default function SetupWizard() {
     const navigate = useNavigate();
+    const firstRoomInputRef = useRef(null);
+
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [isInitialLoading, setIsInitialLoading] = useState(true); // New state for initial loading
     const [appliances, setAppliances] = useState([]);
 
     // Form data
     const [homeData, setHomeData] = useState({ name: 'My Home', totalRooms: 3 });
     const [rooms, setRooms] = useState([]);
     const [existingHomeId, setExistingHomeId] = useState(null); // Track existing home to prevent duplicates
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        if (step === 2) {
+            // Small timeout to ensure DOM update
+            setTimeout(() => {
+                firstRoomInputRef.current?.focus();
+            }, 50);
+        }
+    }, [step]);
 
     useEffect(() => {
         // Fetch appliance library
@@ -73,8 +86,12 @@ export default function SetupWizard() {
             }
         };
 
-        fetchAppliances();
-        checkExistingHome();
+        const init = async () => {
+            await Promise.all([fetchAppliances(), checkExistingHome()]);
+            setIsInitialLoading(false); // Set initial loading to false after all data is fetched
+        };
+
+        init();
     }, []);
 
     const handleHomeSubmit = () => {
@@ -88,8 +105,8 @@ export default function SetupWizard() {
                     // Add new rooms
                     for (let i = rooms.length; i < homeData.totalRooms; i++) {
                         newRooms.push({
-                            name: `Room ${i + 1}`,
-                            type: 'bedroom',
+                            name: '',
+                            type: '',
                             appliances: []
                         });
                     }
@@ -109,8 +126,8 @@ export default function SetupWizard() {
         const initialRooms = [];
         for (let i = 0; i < homeData.totalRooms; i++) {
             initialRooms.push({
-                name: `Room ${i + 1}`,
-                type: 'bedroom',
+                name: '',
+                type: '',
                 appliances: []
             });
         }
@@ -146,15 +163,6 @@ export default function SetupWizard() {
 
     // Search state for common appliances
     const [applianceSearch, setApplianceSearch] = useState({});
-
-    const initCustomForm = (roomIndex) => {
-        if (!customApplianceForm[roomIndex]) {
-            setCustomApplianceForm(prev => ({
-                ...prev,
-                [roomIndex]: { name: '', wattage: '' }
-            }));
-        }
-    };
 
     const updateCustomForm = (roomIndex, field, value) => {
         setCustomApplianceForm(prev => ({
@@ -295,9 +303,11 @@ export default function SetupWizard() {
             <Link to="/dashboard" className="wizard-home-btn" title="Back to Dashboard">
                 <HiHome />
             </Link>
-            <div className="wizard-card">
+            <div className={`wizard-card ${isInitialLoading ? 'is-loading' : ''}`}>
                 <div className="wizard-header">
-                    <h1>{existingHomeId ? 'Edit Your Home' : 'Set Up Your Home'}</h1>
+                    <h1 className="wizard-title-fade">
+                        {isInitialLoading ? 'Loading Details...' : (existingHomeId ? 'Edit Your Home' : 'Set Up Your Home')}
+                    </h1>
                     <div className="step-indicator">
                         <div className={`step ${step >= 1 ? 'active' : ''}`}>1</div>
                         <div className="step-line"></div>
@@ -307,7 +317,21 @@ export default function SetupWizard() {
                     </div>
                 </div>
 
-                {step === 1 && (
+                {isInitialLoading ? (
+                    <div className="wizard-step loading-step">
+                        <div className="skeleton-group">
+                            <div className="skeleton-label"></div>
+                            <div className="skeleton-input"></div>
+                        </div>
+                        <div className="skeleton-group">
+                            <div className="skeleton-label"></div>
+                            <div className="skeleton-input"></div>
+                        </div>
+                        <div className="skeleton-button"></div>
+                    </div>
+                ) : (
+                    <>
+                        {step === 1 && (
                     <div className="wizard-step">
                         <h2>Home Details</h2>
                         <div className="form-group">
@@ -326,11 +350,13 @@ export default function SetupWizard() {
                                 min="1"
                                 max="20"
                                 value={homeData.totalRooms}
-                                onChange={(e) => setHomeData({ ...homeData, totalRooms: parseInt(e.target.value) })}
+                                onChange={(e) => setHomeData({ ...homeData, totalRooms: e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0) })}
+                                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                                onWheel={(e) => e.target.blur()}
                             />
                         </div>
-                        <button onClick={handleHomeSubmit} className="btn-primary">
-                            Next →
+                        <button onClick={handleHomeSubmit} className="btn-primary btn-icon-right">
+                            Next <HiArrowRight />
                         </button>
                     </div>
                 )}
@@ -342,31 +368,46 @@ export default function SetupWizard() {
                             {rooms.map((room, index) => (
                                 <div key={index} className="room-card">
                                     <input
+                                        ref={index === 0 ? firstRoomInputRef : null}
                                         type="text"
                                         value={room.name}
                                         onChange={(e) => updateRoom(index, 'name', e.target.value)}
                                         className="room-name-input"
+                                        placeholder={`Room ${index + 1}`}
                                     />
-                                    <select
-                                        value={room.type}
-                                        onChange={(e) => updateRoom(index, 'type', e.target.value)}
-                                        className="room-type-select"
-                                    >
-                                        <option value="bedroom">Bedroom</option>
-                                        <option value="hall">Hall</option>
-                                        <option value="kitchen">Kitchen</option>
-                                        <option value="bathroom">Bathroom</option>
-                                        <option value="balcony">Balcony</option>
-                                    </select>
+                                    <div className="room-type-wrapper" style={{ position: 'relative' }}>
+                                        <input
+                                            type="text"
+                                            value={room.type}
+                                            onChange={(e) => updateRoom(index, 'type', e.target.value)}
+                                            className="room-type-input"
+                                            list="room-type-suggestions"
+                                            placeholder="Room Type"
+                                            style={{ width: '100%' }} // Ensure it matches select styling
+                                        />
+                                    </div>
                                 </div>
                             ))}
                         </div>
+                        
+                        <datalist id="room-type-suggestions">
+                            <option value="Bedroom" />
+                            <option value="Hall" />
+                            <option value="Kitchen" />
+                            <option value="Bathroom" />
+                            <option value="Balcony" />
+                            <option value="Dining Room" />
+                            <option value="Garage" />
+                            <option value="Office" />
+                            <option value="Utility Room" />
+                        </datalist>
+
                         <div className="wizard-nav">
-                            <button onClick={() => setStep(1)} className="btn-secondary">
-                                ← Back
+                            <button onClick={() => setStep(1)} className="btn-secondary btn-icon-left">
+                                <HiArrowLeft /> Back
                             </button>
-                            <button onClick={() => setStep(3)} className="btn-primary">
-                                Next →
+                            <button onClick={() => setStep(3)} className="btn-primary btn-icon-right">
+                                Next <HiArrowRight />
                             </button>
                         </div>
                     </div>
@@ -376,7 +417,6 @@ export default function SetupWizard() {
                     <div className="wizard-step">
                         <h2>Add Appliances</h2>
                         {rooms.map((room, roomIndex) => {
-                            initCustomForm(roomIndex);
                             return (
                                 <div key={roomIndex} className="room-section">
                                     <h3>{room.name} ({room.type})</h3>
@@ -416,7 +456,9 @@ export default function SetupWizard() {
                                                 type="number"
                                                 placeholder="Wattage"
                                                 value={customApplianceForm[roomIndex]?.wattage || ''}
-                                                onChange={(e) => updateCustomForm(roomIndex, 'wattage', e.target.value)}
+                                                onChange={(e) => updateCustomForm(roomIndex, 'wattage', e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0))}
+                                                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                                                onWheel={(e) => e.target.blur()}
                                                 className="custom-input wattage-input"
                                             />
                                             <button 
@@ -471,14 +513,16 @@ export default function SetupWizard() {
                             );
                         })}
                         <div className="wizard-nav">
-                            <button onClick={() => setStep(2)} className="btn-secondary" disabled={loading}>
-                                ← Back
+                            <button onClick={() => setStep(2)} className="btn-secondary btn-icon-left" disabled={loading}>
+                                <HiArrowLeft /> Back
                             </button>
                             <button onClick={handleFinish} className="btn-primary" disabled={loading}>
                                 {loading ? 'Saving...' : (existingHomeId ? 'Save Changes' : 'Finish Setup')}
                             </button>
                         </div>
                     </div>
+                )}
+                    </>
                 )}
             </div>
         </div>

@@ -8,7 +8,8 @@ import {
     HiSquares2X2, 
     HiBolt, 
     HiCurrencyRupee, 
-    HiLightBulb
+    HiLightBulb,
+    HiHome
 } from 'react-icons/hi2';
 import './Dashboard.css';
 
@@ -57,16 +58,19 @@ export default function Dashboard() {
     const toggleAppliance = async (roomId, applianceId, currentState) => {
         try {
             await api.patch(`/api/appliances/${applianceId}/toggle`);
-            // Optimized update: update local state
-            const updatedConsumption = { ...consumption };
-            const room = updatedConsumption.rooms.find(r => r.id === roomId);
-            const appliance = room.appliances.find(a => a.id === applianceId);
-            appliance.status = !currentState;
+            // Immutable state update
+            const updatedConsumption = {
+                ...consumption,
+                rooms: consumption.rooms.map(r => r.id === roomId ? {
+                    ...r,
+                    appliances: r.appliances.map(a => a.id === applianceId ? { ...a, status: !currentState } : a)
+                } : r)
+            };
             
-            // Recalculate live load
+            // Recalculate live load from the newly created state
             let newLiveLoad = 0;
             updatedConsumption.rooms.forEach(r => {
-                r.appliances.forEach(a => {
+                r.appliances?.forEach(a => {
                     if (a.status) newLiveLoad += a.powerRating;
                 });
             });
@@ -92,10 +96,10 @@ export default function Dashboard() {
                 <div className="empty-state">
                     <div className="empty-icon"><HiSquares2X2 /></div>
                     <h2>Welcome to PowerSense</h2>
-                    <p>Get started by setting up your home and appliances.</p>
-                    <button className="setup-btn" onClick={() => window.location.href='/setup'}>
+                    <p className="mb-24">Get started by setting up your home and appliances.</p>
+                    <Link to="/setup" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
                         Go to Setup Wizard
-                    </button>
+                    </Link>
                 </div>
             </DashboardLayout>
         );
@@ -140,9 +144,13 @@ export default function Dashboard() {
 
                 <StatCard 
                     icon={<HiCurrencyRupee />}
-                    label="Estimated Bill"
+                    label={billing?.totalSubsidy > 0 ? "Estimated Bill (Subsidized)" : "Estimated Bill"}
                     value={`₹${billing?.totalBill?.toFixed(0) || 0}`}
-                    change={billing?.slab || 'No data'}
+                    change={
+                        billing?.totalSubsidy > 0 
+                            ? `${billing?.slab} (Saved ₹${billing.totalSubsidy.toFixed(0)})` 
+                            : billing?.slab || 'No data'
+                    }
                     iconColor="#22c55e"
                 />
 
@@ -155,34 +163,51 @@ export default function Dashboard() {
                 />
             </div>
 
-            <div className="section">
+            <div className="section quick-controls-section">
                 <h2 className="mb-24">Quick Controls</h2>
                 {consumption?.rooms?.some(r => r.appliances?.length > 0) ? (
-                    consumption.rooms.map(room => (
-                        room.appliances?.length > 0 && (
-                            <div key={room.id} className="room-section">
-                                <h3 className="mb-16">{room.name}</h3>
-                                <div className="appliances-grid">
-                                    {room.appliances.map(appliance => (
-                                        <div key={appliance.id} className="appliance-control">
-                                            <div className="appliance-info">
-                                                <p className="appliance-name">{appliance.name}</p>
-                                                <p className="appliance-power">{appliance.powerRating}W</p>
-                                            </div>
-                                            <label className="toggle-switch">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={appliance.status}
-                                                    onChange={() => toggleAppliance(room.id, appliance.id, appliance.status)}
-                                                />
-                                                <span className="toggle-slider"></span>
-                                            </label>
+                    <div className="rooms-horizontal-grid">
+                        {consumption.rooms.map(room => (
+                            room.appliances?.length > 0 && (
+                                <div key={room.id} className="room-control-card">
+                                    <div className="room-header-main">
+                                        <div className="room-icon-bg">
+                                            <HiHome />
                                         </div>
-                                    ))}
+                                        <div className="room-header-text">
+                                            <div className="title-row">
+                                                <h3>{room.name}</h3>
+                                                <div className="active-indicator">
+                                                    <span className={`status-dot ${room.appliances.some(a => a.status) ? 'active' : ''}`}></span>
+                                                    {room.appliances.filter(a => a.status).length} Active
+                                                </div>
+                                            </div>
+                                            <p>{room.appliances.length} Devices</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="appliances-inner-list">
+                                        {room.appliances.map(appliance => (
+                                            <div key={appliance.id} className="appliance-row-item">
+                                                <div className="app-basic-info">
+                                                    <span className="app-name-label">{appliance.name}</span>
+                                                    <span className="app-wattage-label">{appliance.powerRating}W</span>
+                                                </div>
+                                                <label className="toggle-switch-compact">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={appliance.status}
+                                                        onChange={() => toggleAppliance(room.id, appliance.id, appliance.status)}
+                                                    />
+                                                    <span className="toggle-slider"></span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                    ))
+                            )
+                        ))}
+                    </div>
                 ) : (
                     <div className="empty-state-mini">
                         <p>No appliances found. Add your appliances in the <Link to="/setup">Home Setup</Link> section to start tracking.</p>

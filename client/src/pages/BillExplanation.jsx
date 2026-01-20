@@ -52,9 +52,19 @@ export default function BillExplanation() {
                         <span>{billing?.totalUnits?.toFixed(1) || 0} Units</span>
                     </div>
                     <div className="bill-row">
-                        <span>Rate per Unit</span>
-                        <span>₹{billing?.ratePerUnit || 0}</span>
+                        <span>Billing Range</span>
+                        <span>{billing?.slab || 'Standard Slab'}</span>
                     </div>
+                    <div className="bill-row">
+                        <span>Subtotal</span>
+                        <span>₹{((billing?.totalBill || 0) + (billing?.totalSubsidy || 0) - (billing?.fixedCharges || 0)).toFixed(2)}</span>
+                    </div>
+                    {billing?.totalSubsidy > 0 && (
+                        <div className="bill-row" style={{ color: '#22c55e' }}>
+                            <span>Total Subsidy</span>
+                            <span>- ₹{billing.totalSubsidy.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="bill-row">
                         <span>Fixed Charges</span>
                         <span>₹{billing?.fixedCharges || 0}</span>
@@ -74,26 +84,32 @@ export default function BillExplanation() {
                         <thead>
                             <tr>
                                 <th>Unit Slab</th>
-                                <th>Rate/Unit</th>
-                                <th>Status</th>
+                                <th>Units</th>
+                                <th>Rate</th>
+                                <th>Cost</th>
+                                <th>Subsidy</th>
+                                <th>Net Cost</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>0 - 100 Units</td>
-                                <td>₹0.00</td>
-                                <td style={{ color: '#22c55e', fontWeight: 600 }}>Subsidized</td>
-                            </tr>
-                            <tr>
-                                <td>101 - 200 Units</td>
-                                <td>₹2.25</td>
-                                <td>Standard</td>
-                            </tr>
-                            <tr>
-                                <td>201+ Units</td>
-                                <td>₹4.50</td>
-                                <td>Higher Tier</td>
-                            </tr>
+                            {billing?.slabBreakdown?.length > 0 ? (
+                                billing.slabBreakdown.map((row, idx) => (
+                                    <tr key={idx}>
+                                        <td>{row.slab}</td>
+                                        <td>{row.units}</td>
+                                        <td>₹{row.rate}</td>
+                                        <td>₹{row.cost?.toFixed(2)}</td>
+                                        <td style={{ color: row.subsidy > 0 ? '#22c55e' : 'inherit' }}>
+                                            {row.subsidy > 0 ? `-₹${row.subsidy.toFixed(2)}` : '₹0.00'}
+                                        </td>
+                                        <td>₹{row.netCost?.toFixed(2)}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" style={{ textAlign: 'center' }}>No slab data available</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

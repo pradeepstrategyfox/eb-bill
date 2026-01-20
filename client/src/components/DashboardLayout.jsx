@@ -16,7 +16,10 @@ import {
 export default function DashboardLayout({ children }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        const userData = localStorage.getItem('user');
+        return userData ? JSON.parse(userData) : null;
+    });
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
@@ -28,13 +31,6 @@ export default function DashboardLayout({ children }) {
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
-
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-    }, []);
 
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
