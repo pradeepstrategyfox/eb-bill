@@ -1,8 +1,53 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { HiHome, HiPlus, HiXMark, HiMagnifyingGlass, HiArrowLeft, HiArrowRight } from 'react-icons/hi2';
-import api from '../api';
+import { supabase } from '../supabaseClient';
+import toast from 'react-hot-toast';
 import './SetupWizard.css';
+
+const APPLIANCE_LIBRARY = [
+    { type: 'LED Bulb', wattage: 9, category: 'lighting' },
+    { type: 'CFL Bulb', wattage: 15, category: 'lighting' },
+    { type: 'Tube Light', wattage: 40, category: 'lighting' },
+    { type: 'Incandescent Bulb', wattage: 60, category: 'lighting' },
+    { type: 'Normal Fan', wattage: 75, category: 'cooling' },
+    { type: 'BLDC Fan', wattage: 35, category: 'cooling' },
+    { type: 'Table Fan', wattage: 50, category: 'cooling' },
+    { type: '1 Ton 3 Star AC', wattage: 1200, category: 'cooling' },
+    { type: '1 Ton 5 Star AC', wattage: 900, category: 'cooling' },
+    { type: '1.5 Ton 3 Star AC', wattage: 1700, category: 'cooling' },
+    { type: '1.5 Ton 5 Star AC', wattage: 1500, category: 'cooling' },
+    { type: '2 Ton 3 Star AC', wattage: 2200, category: 'cooling' },
+    { type: '2 Ton 5 Star AC', wattage: 2000, category: 'cooling' },
+    { type: 'Geyser 15L', wattage: 2000, category: 'heating' },
+    { type: 'Geyser 25L', wattage: 2500, category: 'heating' },
+    { type: 'Room Heater', wattage: 2000, category: 'heating' },
+    { type: 'Iron Box', wattage: 1000, category: 'heating' },
+    { type: 'Refrigerator Single Door', wattage: 150, category: 'kitchen' },
+    { type: 'Refrigerator Double Door', wattage: 250, category: 'kitchen' },
+    { type: 'Induction Cooktop', wattage: 1500, category: 'kitchen' },
+    { type: 'Microwave Oven', wattage: 1200, category: 'kitchen' },
+    { type: 'Mixer Grinder', wattage: 500, category: 'kitchen' },
+    { type: 'Electric Kettle', wattage: 1500, category: 'kitchen' },
+    { type: 'Toaster', wattage: 800, category: 'kitchen' },
+    { type: 'Rice Cooker', wattage: 700, category: 'kitchen' },
+    { type: 'Dishwasher', wattage: 1800, category: 'kitchen' },
+    { type: 'LED TV 32 inch', wattage: 50, category: 'electronics' },
+    { type: 'LED TV 43 inch', wattage: 80, category: 'electronics' },
+    { type: 'LED TV 55 inch', wattage: 110, category: 'electronics' },
+    { type: 'Desktop Computer', wattage: 150, category: 'electronics' },
+    { type: 'Laptop', wattage: 65, category: 'electronics' },
+    { type: 'Monitor', wattage: 40, category: 'electronics' },
+    { type: 'Printer', wattage: 50, category: 'electronics' },
+    { type: 'WiFi Router', wattage: 10, category: 'electronics' },
+    { type: 'Set Top Box', wattage: 15, category: 'electronics' },
+    { type: 'Gaming Console', wattage: 150, category: 'electronics' },
+    { type: 'Mobile Charger', wattage: 18, category: 'electronics' },
+    { type: 'Tablet Charger', wattage: 24, category: 'electronics' },
+    { type: 'Washing Machine', wattage: 500, category: 'other' },
+    { type: 'Vacuum Cleaner', wattage: 1000, category: 'other' },
+    { type: 'Water Pump', wattage: 750, category: 'other' },
+];
 
 export default function SetupWizard() {
     const navigate = useNavigate();
@@ -10,18 +55,17 @@ export default function SetupWizard() {
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [isInitialLoading, setIsInitialLoading] = useState(true); // New state for initial loading
-    const [appliances, setAppliances] = useState([]);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [appliances, setAppliances] = useState(APPLIANCE_LIBRARY);
 
     // Form data
     const [homeData, setHomeData] = useState({ name: 'My Home', totalRooms: 3 });
     const [rooms, setRooms] = useState([]);
-    const [existingHomeId, setExistingHomeId] = useState(null); // Track existing home to prevent duplicates
+    const [existingHomeId, setExistingHomeId] = useState(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
         if (step === 2) {
-            // Small timeout to ensure DOM update
             setTimeout(() => {
                 firstRoomInputRef.current?.focus();
             }, 50);
@@ -29,72 +73,64 @@ export default function SetupWizard() {
     }, [step]);
 
     useEffect(() => {
-        // Fetch appliance library
-        const fetchAppliances = async () => {
-            try {
-                const response = await api.get('/api/appliances/library');
-                setAppliances(response.data);
-            } catch (error) {
-                console.error('Error fetching appliances:', error);
-            }
-        };
-
-        // Check if user already has a home configured
         const checkExistingHome = async () => {
             try {
-                console.log('🔍 Checking for existing home...');
-                const response = await api.get('/api/homes');
-                if (response.data && response.data.length > 0) {
-                    const existingHome = response.data[0];
-                    console.log('✅ Found existing home:', existingHome.name);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
 
-                    // Store existing home ID to prevent duplicate creation
+                const { data: homes, error } = await supabase
+                    .from('ps_homes')
+                    .select('*, ps_rooms(*, ps_appliances(*))')
+                    .order('created_at');
+
+                if (error) throw error;
+
+                if (homes && homes.length > 0) {
+                    const existingHome = homes[0];
                     setExistingHomeId(existingHome.id);
 
-                    // Populate form with existing data
                     setHomeData({
                         name: existingHome.name,
-                        totalRooms: existingHome.totalRooms || existingHome.rooms?.length || 3
+                        totalRooms: existingHome.total_rooms || existingHome.ps_rooms?.length || 3
                     });
 
-                    // Populate rooms if they exist
-                    const roomsData = existingHome.rooms || existingHome.Rooms || [];
+                    const roomsData = existingHome.ps_rooms || [];
                     if (roomsData.length > 0) {
                         const formattedRooms = roomsData.map(room => ({
                             id: room.id,
                             name: room.name,
                             type: room.type,
-                            appliances: (room.appliances || room.Appliances || []).map(app => ({
+                            appliances: (room.ps_appliances || []).map(app => ({
                                 id: app.id,
                                 name: app.name,
-                                // Use type if available, otherwise use name (for library matching)
                                 type: app.type || app.name,
                                 wattage: app.wattage,
-                                isExisting: true // Mark as existing appliance
+                                isExisting: true
                             }))
                         }));
                         setRooms(formattedRooms);
-                        console.log(`✅ Loaded ${formattedRooms.length} existing rooms with appliances:`, 
-                            formattedRooms.map(r => ({ name: r.name, appliances: r.appliances.length })));
                     }
-                } else {
-                    console.log('ℹ️ No existing home found - starting fresh');
                 }
             } catch (error) {
-                console.error('⚠️ Error checking existing home:', error);
-                // Not critical - user can still create new
+                console.error('Error checking existing home:', error);
+            } finally {
+                setIsInitialLoading(false);
             }
         };
 
-        const init = async () => {
-            await Promise.all([fetchAppliances(), checkExistingHome()]);
-            setIsInitialLoading(false); // Set initial loading to false after all data is fetched
-        };
-
-        init();
+        checkExistingHome();
     }, []);
 
     const handleHomeSubmit = () => {
+        if (!homeData.name || !homeData.name.trim()) {
+            toast.error('Home name is mandatory');
+            return;
+        }
+        if (!homeData.totalRooms || homeData.totalRooms < 1) {
+            toast.error('Please enter a valid number of rooms');
+            return;
+        }
+
         // Check if we already have rooms loaded (from existing home)
         if (rooms.length > 0) {
             // If total rooms changed, adjust the rooms array
@@ -133,6 +169,15 @@ export default function SetupWizard() {
         }
         setRooms(initialRooms);
         setStep(2);
+    };
+
+    const handleRoomsSubmit = () => {
+        const incompleteRoom = rooms.find(r => !r.name?.trim() || !r.type?.trim());
+        if (incompleteRoom) {
+            toast.error('All room names and types are mandatory');
+            return;
+        }
+        setStep(3);
     };
 
     const updateRoom = (index, field, value) => {
@@ -203,96 +248,114 @@ export default function SetupWizard() {
     const handleFinish = async () => {
         setLoading(true);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            // Ensure profile exists in ps_users (Foreign Key requirement)
+            const { data: profile } = await supabase
+                .from('ps_users')
+                .select('id')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (!profile) {
+                const { error: profileError } = await supabase
+                    .from('ps_users')
+                    .insert({
+                        id: user.id,
+                        email: user.email,
+                        name: user.user_metadata?.name || user.email.split('@')[0]
+                    });
+                if (profileError) throw profileError;
+            }
+
             let homeId;
 
             if (existingHomeId) {
-                // Use existing home - don't create a new one!
                 homeId = existingHomeId;
-                console.log('✅ Using existing home ID:', homeId);
+                // Update home name and room count
+                await supabase
+                    .from('ps_homes')
+                    .update({ 
+                        name: homeData.name,
+                        total_rooms: parseInt(homeData.totalRooms)
+                    })
+                    .eq('id', homeId);
 
-                // Update home name if changed
-                await api.put(`/api/homes/${homeId}`, homeData);
-
-                // Delete existing rooms (this will cascade to delete appliances)
-                const currentHome = await api.get(`/api/homes/${homeId}`);
-                const existingRooms = currentHome.data.rooms || [];
-                
-                console.log(`🗑️ Deleting ${existingRooms.length} existing rooms...`);
-                for (const room of existingRooms) {
-                    await api.delete(`/api/rooms/${room.id}`);
-                }
-                console.log('✅ Existing rooms deleted');
+                // For simplicity, we'll clear existing rooms and rebuild
+                // This matches the original logic
+                await supabase.from('ps_rooms').delete().eq('home_id', homeId);
             } else {
-                // Create new home only if one doesn't exist
-                console.log('📝 Creating new home...');
-                const homeResponse = await api.post('/api/homes', homeData);
-                homeId = homeResponse.data.id;
-                console.log('✅ Created new home with ID:', homeId);
+                // Create new home
+                const { data: newHome, error: homeError } = await supabase
+                    .from('ps_homes')
+                    .insert({
+                        name: homeData.name,
+                        total_rooms: parseInt(homeData.totalRooms),
+                        user_id: user.id
+                    })
+                    .select()
+                    .single();
+
+                if (homeError) throw homeError;
+                homeId = newHome.id;
+                
+                // Also create an initial billing cycle for the new home
+                const startDate = new Date();
+                const endDate = new Date();
+                endDate.setDate(endDate.getDate() + 60);
+                
+                await supabase.from('ps_billing_cycles').insert({
+                    home_id: homeId,
+                    start_date: startDate.toISOString().split('T')[0],
+                    end_date: endDate.toISOString().split('T')[0],
+                    is_active: true
+                });
             }
 
-            // Prepare rooms data
-            const roomsData = rooms.map(room => ({
+            // Create all rooms
+            const roomsToInsert = rooms.map(room => ({
+                home_id: homeId,
                 name: room.name,
-                type: room.type,
-                squareFootage: 100
+                type: room.type
             }));
 
-            // Create all rooms at once
-            const roomsResponse = await api.post(`/api/homes/${homeId}/rooms`, {
-                rooms: roomsData
-            });
+            const { data: createdRooms, error: roomsError } = await supabase
+                .from('ps_rooms')
+                .insert(roomsToInsert)
+                .select();
 
-            console.log(`✅ Created ${roomsResponse.data.length} rooms`);
+            if (roomsError) throw roomsError;
 
             // Create appliances for each room
+            const appliancesToInsert = [];
             for (let i = 0; i < rooms.length; i++) {
-                const room = rooms[i];
-                const createdRoom = roomsResponse.data[i];
+                const roomData = rooms[i];
+                const createdRoom = createdRooms[i];
 
-                if (room.appliances.length > 0) {
-                    const appliancesData = room.appliances.map(app => {
-                        // Ensure type field exists and is not empty
-                        const applianceType = app.type || app.name;
-
-                        if (!applianceType) {
-                            console.error('❌ Appliance missing type:', app);
-                            throw new Error('Appliance data is invalid - missing type');
-                        }
-
-                        return {
-                            name: app.name || applianceType,
-                            type: applianceType,
-                            wattage: app.wattage || 100 // Default to 100W if missing
-                        };
+                if (roomData.appliances.length > 0) {
+                    roomData.appliances.forEach(app => {
+                        appliancesToInsert.push({
+                            room_id: createdRoom.id,
+                            name: app.name,
+                            type: app.type || app.name,
+                            wattage: parseFloat(app.wattage) || 100
+                        });
                     });
-
-                    console.log(`📤 Creating ${appliancesData.length} appliances for ${room.name}`);
-
-                    await api.post(`/api/homes/${homeId}/rooms/${createdRoom.id}/appliances`, {
-                        appliances: appliancesData
-                    });
-
-                    console.log(`✅ Appliances created for ${room.name}`);
                 }
+            }
+
+            if (appliancesToInsert.length > 0) {
+                const { error: appsError } = await supabase
+                    .from('ps_appliances')
+                    .insert(appliancesToInsert);
+                if (appsError) throw appsError;
             }
 
             navigate('/dashboard');
         } catch (error) {
-            console.error('❌ Setup wizard error:', error);
-            console.error('Error details:', error.response?.data);
-            console.error('Error message:', error.message);
-
-            let errorMessage = 'Failed to save configuration. ';
-
-            if (error.response?.data?.error) {
-                errorMessage += error.response.data.error;
-            } else if (error.message) {
-                errorMessage += error.message;
-            } else {
-                errorMessage += 'Please try again.';
-            }
-
-            alert(errorMessage);
+            console.error('Setup wizard error:', error);
+            toast.error(error.message || 'Failed to save configuration');
         } finally {
             setLoading(false);
         }
@@ -406,7 +469,7 @@ export default function SetupWizard() {
                             <button onClick={() => setStep(1)} className="btn-secondary btn-icon-left">
                                 <HiArrowLeft /> Back
                             </button>
-                            <button onClick={() => setStep(3)} className="btn-primary btn-icon-right">
+                            <button onClick={handleRoomsSubmit} className="btn-primary btn-icon-right">
                                 Next <HiArrowRight />
                             </button>
                         </div>

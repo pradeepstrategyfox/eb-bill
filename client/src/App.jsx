@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { supabase } from './supabaseClient';
+import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -9,28 +11,60 @@ import MeterReading from './pages/MeterReading';
 import BillExplanation from './pages/BillExplanation';
 
 // Protected Route Component
-function ProtectedRoute({ children }) {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
+function ProtectedRoute({ session, children, loading }) {
+  if (loading) return null;
+  return session ? children : <Navigate to="/login" />;
 }
 
-// Public Route Component (redirects to dashboard if already logged in)
-function PublicRoute({ children }) {
-  const token = localStorage.getItem('token');
-  return token ? <Navigate to="/dashboard" /> : children;
+// Public Route Component
+function PublicRoute({ session, children, loading }) {
+  if (loading) return null;
+  return session ? <Navigate to="/dashboard" /> : children;
 }
 
 function App() {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Determine theme: localStorage > system preference > default 'light'
+    const getInitialTheme = () => {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) return savedTheme;
+      
+      // Check system preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+      return 'light';
+    };
+    
+    document.documentElement.setAttribute('data-theme', getInitialTheme());
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  if (loading) return null; // Or a global spinner
   return (
+    <>
+    <Toaster position="top-center" reverseOrder={false} />
     <Routes>
       <Route
         path="/login"
         element={
-          <PublicRoute>
+          <PublicRoute session={session} loading={loading}>
             <Login />
           </PublicRoute>
         }
@@ -38,7 +72,7 @@ function App() {
       <Route
         path="/signup"
         element={
-          <PublicRoute>
+          <PublicRoute session={session} loading={loading}>
             <Signup />
           </PublicRoute>
         }
@@ -46,7 +80,7 @@ function App() {
       <Route
         path="/setup"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute session={session} loading={loading}>
             <SetupWizard />
           </ProtectedRoute>
         }
@@ -54,7 +88,7 @@ function App() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute session={session} loading={loading}>
             <Dashboard />
           </ProtectedRoute>
         }
@@ -62,7 +96,7 @@ function App() {
       <Route
         path="/insights"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute session={session} loading={loading}>
             <Insights />
           </ProtectedRoute>
         }
@@ -70,7 +104,7 @@ function App() {
       <Route
         path="/meter-reading"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute session={session} loading={loading}>
             <MeterReading />
           </ProtectedRoute>
         }
@@ -78,7 +112,7 @@ function App() {
       <Route
         path="/bill-explanation"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute session={session} loading={loading}>
             <BillExplanation />
           </ProtectedRoute>
         }
@@ -86,6 +120,7 @@ function App() {
       <Route path="/" element={<Navigate to="/dashboard" />} />
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
+    </>
   );
 }
 

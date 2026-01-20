@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import api from '../api';
 import { HiBolt, HiOutlineCheckBadge } from 'react-icons/hi2';
 import './Auth.css';
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import api from '../api';
 import './Auth.css';
 
 export default function Signup() {
@@ -59,14 +58,26 @@ export default function Signup() {
 
             if (signUpError) throw signUpError;
 
-            // Note: If email confirmation is enabled in Supabase, 
-            // the session might be null initially.
+            // Create profile in ps_users table if session is available
             if (data.session) {
+                const { error: profileError } = await supabase
+                    .from('ps_users')
+                    .insert({
+                        id: data.user.id,
+                        email: data.user.email,
+                        name: formData.name.trim()
+                    });
+                
+                if (profileError) {
+                    console.error('Error creating profile record:', profileError);
+                    // We don't throw here to let the user proceed if auth worked
+                }
+
                 localStorage.setItem('token', data.session.access_token);
                 localStorage.setItem('user', JSON.stringify({
                     id: data.user.id,
                     email: data.user.email,
-                    name: data.user.user_metadata?.name,
+                    name: formData.name.trim(),
                 }));
                 navigate('/setup');
             } else {

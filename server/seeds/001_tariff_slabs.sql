@@ -1,7 +1,7 @@
 -- Seed TNEB Tariff Slabs (Tamil Nadu Electricity Board Domestic Tariff 2024)
 -- Bi-monthly billing cycle
 
-INSERT INTO tariff_slabs (min_units, max_units, rate_per_unit, fixed_charge, subsidy_percentage, is_active, effective_from) VALUES
+INSERT INTO ps_tariff_slabs (min_units, max_units, rate_per_unit, fixed_charge, subsidy_percentage, is_active, effective_from) VALUES
 -- Slab 1: 0-100 units (subsidized for low consumption)
 (0, 100, 2.50, 20, 50, TRUE, '2024-01-01'),
 

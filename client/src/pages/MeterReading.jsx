@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
-import api from '../api';
+import { supabase } from '../supabaseClient';
 import { HiBolt, HiClipboardDocumentList } from 'react-icons/hi2';
 
 export default function MeterReading() {
@@ -17,13 +17,26 @@ export default function MeterReading() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const homesRes = await api.get('/api/homes');
-                setHomes(homesRes.data);
-                if (homesRes.data.length > 0) {
-                    const homeId = homesRes.data[0].id;
-                    setSelectedHome(homesRes.data[0]);
-                    const historyRes = await api.get(`/api/meter/homes/${homeId}/meter-readings`);
-                    setHistory(historyRes.data);
+                const { data: homesData, error: homesError } = await supabase
+                    .from('ps_homes')
+                    .select('*')
+                    .order('created_at');
+                
+                if (homesError) throw homesError;
+                setHomes(homesData);
+
+                if (homesData && homesData.length > 0) {
+                    const homeId = homesData[0].id;
+                    setSelectedHome(homesData[0]);
+                    
+                    const { data: readings, error: readingsError } = await supabase
+                        .from('ps_meter_readings')
+                        .select('*')
+                        .eq('home_id', homeId)
+                        .order('reading_date', { ascending: false });
+
+                    if (readingsError) throw readingsError;
+                    setHistory(readings || []);
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -40,17 +53,29 @@ export default function MeterReading() {
 
         try {
             setSubmitting(true);
-            await api.post(`/api/meter/homes/${selectedHome.id}/meter-readings`, {
-                readingValue: parseFloat(newReading)
-            });
+            const { error } = await supabase
+                .from('ps_meter_readings')
+                .insert({
+                    home_id: selectedHome.id,
+                    reading_value: parseFloat(newReading)
+                });
+
+            if (error) throw error;
+
             setNewReading('');
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
             
             // Refresh history
-            const res = await api.get(`/api/meter/homes/${selectedHome.id}/meter-readings`);
-            setHistory(res.data);
+            const { data: readings } = await supabase
+                .from('ps_meter_readings')
+                .select('*')
+                .eq('home_id', selectedHome.id)
+                .order('reading_date', { ascending: false });
+            
+            setHistory(readings || []);
         } catch (error) {
+            console.error('Submission error:', error);
             alert('Error submitting reading');
         } finally {
             setSubmitting(false);
@@ -126,9 +151,9 @@ export default function MeterReading() {
                             <tbody>
                                 {history.map((item, index) => (
                                     <tr key={index}>
-                                        <td>{new Date(item.createdAt).toLocaleDateString()}</td>
-                                        <td>{item.readingValue} kWh</td>
-                                        <td>{item.consumption || '-'}</td>
+                                        <td>{new Date(item.reading_date || item.created_at).toLocaleDateString()}</td>
+                                        <td>{item.reading_value} kWh</td>
+                                        <td>{item.variance_percentage ? `${item.variance_percentage}%` : '-'}</td>
                                         <td>Manual</td>
                                     </tr>
                                 ))}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
-import api from '../api';
+import { supabase } from '../supabaseClient';
 import { 
     HiChevronDoubleUp, 
     HiLightBulb, 
@@ -19,13 +19,70 @@ export default function Insights() {
     useEffect(() => {
         const fetchInsights = async () => {
             try {
-                const homesRes = await api.get('/api/homes');
-                setHomes(homesRes.data);
-                if (homesRes.data.length > 0) {
-                    const homeId = homesRes.data[0].id;
-                    setSelectedHome(homesRes.data[0]);
-                    const insightsRes = await api.get(`/api/consumption/${homeId}/insights`);
-                    setInsights(insightsRes.data);
+                const { data: homesData, error: homesError } = await supabase
+                    .from('ps_homes')
+                    .select('*, ps_rooms(*, ps_appliances(*))')
+                    .order('created_at');
+                
+                if (homesError) throw homesError;
+                setHomes(homesData);
+
+                if (homesData.length > 0) {
+                    const home = homesData[0];
+                    setSelectedHome(home);
+                    
+                    // Fetch top consumers logic
+                    const applianceIds = home.ps_rooms.flatMap(r => r.ps_appliances.map(a => a.id));
+                    
+                    const { data: logs, error: logsError } = await supabase
+                        .from('ps_appliance_usage_logs')
+                        .select('appliance_id, energy_consumed_kwh')
+                        .in('appliance_id', applianceIds);
+
+                    if (logsError) throw logsError;
+
+                    // Aggregate logs by appliance
+                    const consumptionMap = {};
+                    logs.forEach(log => {
+                        consumptionMap[log.appliance_id] = (consumptionMap[log.appliance_id] || 0) + (log.energy_consumed_kwh || 0);
+                    });
+
+                    // Add in-progress consumption for appliances that are currently ON
+                    const now = new Date();
+                    const { data: activeLogs } = await supabase
+                        .from('ps_appliance_usage_logs')
+                        .select('appliance_id, turned_on_at')
+                        .is('turned_off_at', null)
+                        .in('appliance_id', applianceIds);
+
+                    if (activeLogs) {
+                        activeLogs.forEach(log => {
+                            // Find the appliance wattage
+                            const appliance = home.ps_rooms
+                                .flatMap(r => r.ps_appliances)
+                                .find(a => a.id === log.appliance_id);
+                            
+                            if (appliance) {
+                                const start = new Date(log.turned_on_at);
+                                const durationHrs = (now - start) / (1000 * 60 * 60);
+                                const liveKwh = (appliance.wattage / 1000) * durationHrs;
+                                consumptionMap[log.appliance_id] = (consumptionMap[log.appliance_id] || 0) + liveKwh;
+                            }
+                        });
+                    }
+
+                    const topConsumers = home.ps_rooms.flatMap(r => r.ps_appliances.map(a => ({
+                        id: a.id,
+                        name: a.name,
+                        roomName: r.name,
+                        totalKwh: consumptionMap[a.id] || 0,
+                        estimatedCost: (consumptionMap[a.id] || 0) * 5 // Fixed rate for now
+                    })))
+                    .filter(a => a.totalKwh > 0.0001) // Filter out negligible amounts
+                    .sort((a, b) => b.totalKwh - a.totalKwh)
+                    .slice(0, 5);
+
+                    setInsights({ topConsumers });
                 }
             } catch (error) {
                 console.error('Error fetching insights:', error);

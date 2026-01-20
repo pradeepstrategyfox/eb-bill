@@ -45,7 +45,7 @@ CREATE TABLE public.ps_rooms (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   home_id UUID REFERENCES public.ps_homes(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
-  type TEXT CHECK (type IN ('bedroom', 'hall', 'kitchen', 'bathroom', 'balcony')) NOT NULL,
+  type TEXT NOT NULL,
   square_footage FLOAT,
   position_x INTEGER DEFAULT 0,
   position_y INTEGER DEFAULT 0,
@@ -145,6 +145,20 @@ USING (home_id IN (SELECT id FROM ps_homes WHERE user_id = auth.uid()));
 CREATE POLICY "Users can manage own appliances" ON ps_appliances FOR ALL TO authenticated 
 USING (room_id IN (SELECT r.id FROM ps_rooms r JOIN ps_homes h ON r.home_id = h.id WHERE h.user_id = auth.uid()));
 
+CREATE POLICY "Users can manage own usage logs" ON ps_appliance_usage_logs FOR ALL TO authenticated 
+USING (appliance_id IN (
+    SELECT a.id FROM ps_appliances a 
+    JOIN ps_rooms r ON a.room_id = r.id 
+    JOIN ps_homes h ON r.home_id = h.id 
+    WHERE h.user_id = auth.uid()
+));
+
+CREATE POLICY "Users can manage own billing cycles" ON ps_billing_cycles FOR ALL TO authenticated 
+USING (home_id IN (SELECT id FROM ps_homes WHERE user_id = auth.uid()));
+
+CREATE POLICY "Users can manage own meter readings" ON ps_meter_readings FOR ALL TO authenticated 
+USING (home_id IN (SELECT id FROM ps_homes WHERE user_id = auth.uid()));
+
 CREATE POLICY "Public read for tariffs" ON ps_tariff_slabs FOR SELECT TO authenticated USING (true);
 ```
 
@@ -161,40 +175,47 @@ CREATE OR REPLACE FUNCTION toggle_appliance_state(target_appliance_id UUID)
 RETURNS public.ps_appliances AS $$
 DECLARE
     app_record public.ps_appliances;
-    last_log public.ps_appliance_usage_logs;
-    duration_hrs FLOAT;
-    energy_kwh FLOAT;
+    last_log_id UUID;
+    v_now TIMESTAMPTZ := NOW();
+    app_wattage NUMERIC;
 BEGIN
-    -- Get appliance
+    -- 1. Get current appliance state
     SELECT * INTO app_record FROM ps_appliances WHERE id = target_appliance_id;
     
+    IF app_record IS NULL THEN
+        RAISE EXCEPTION 'Appliance not found: %', target_appliance_id;
+    END IF;
+    
+    app_wattage := app_record.wattage;
+    
     IF app_record.is_on THEN
-        -- Turning OFF: Close usage log
-        SELECT * INTO last_log FROM ps_appliance_usage_logs 
+        -- 2. Turning OFF - Find the active log and close it
+        SELECT id INTO last_log_id 
+        FROM ps_appliance_usage_logs 
         WHERE appliance_id = target_appliance_id AND turned_off_at IS NULL 
-        ORDER BY turned_on_at DESC LIMIT 1;
+        ORDER BY turned_on_at DESC 
+        LIMIT 1;
         
-        IF last_log IS NOT NULL THEN
-            duration_hrs := EXTRACT(EPOCH FROM (NOW() - last_log.turned_on_at)) / 3600;
-            energy_kwh := (app_record.wattage / 1000) * duration_hrs;
-            
+        IF last_log_id IS NOT NULL THEN
             UPDATE ps_appliance_usage_logs SET 
-                turned_off_at = NOW(),
-                duration_seconds = EXTRACT(EPOCH FROM (NOW() - last_log.turned_on_at)),
-                energy_consumed_kwh = energy_kwh
-            WHERE id = last_log.id;
+                turned_off_at = v_now,
+                duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (v_now - turned_on_at)))::INTEGER,
+                energy_consumed_kwh = (app_wattage / 1000.0) * (EXTRACT(EPOCH FROM (v_now - turned_on_at)) / 3600.0)
+            WHERE id = last_log_id;
         END IF;
         
         UPDATE ps_appliances SET is_on = FALSE WHERE id = target_appliance_id;
     ELSE
-        -- Turning ON: Create new log
-        INSERT INTO ps_appliance_usage_logs (appliance_id, turned_on_at)
-        VALUES (target_appliance_id, NOW());
+        -- 3. Turning ON - Create a new log entry
+        INSERT INTO ps_appliance_usage_logs (appliance_id, turned_on_at, wattage) 
+        VALUES (target_appliance_id, v_now, app_wattage);
         
         UPDATE ps_appliances SET is_on = TRUE WHERE id = target_appliance_id;
     END IF;
     
-    RETURN (SELECT * FROM ps_appliances WHERE id = target_appliance_id);
+    -- 4. Return the updated appliance record
+    SELECT * INTO app_record FROM ps_appliances WHERE id = target_appliance_id;
+    RETURN app_record;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
@@ -253,16 +274,61 @@ In the Supabase Dashboard, go to **Database > Extensions** and enable `pg_cron`.
 Create a function that iterates through all active billing cycles and updates their consumption based on usage logs.
 
 ```sql
+CREATE OR REPLACE FUNCTION calculate_bill_amount(units FLOAT)
+RETURNS FLOAT AS $$
+DECLARE
+    bill_total FLOAT := 0;
+    remaining_units FLOAT := units;
+    slab_record RECORD;
+    units_in_slab FLOAT;
+    highest_fixed_charge FLOAT := 0;
+BEGIN
+    -- 1. Iterate through active slabs in order
+    FOR slab_record IN 
+        SELECT * FROM ps_tariff_slabs 
+        WHERE is_active = TRUE 
+        ORDER BY min_units ASC 
+    LOOP
+        IF remaining_units <= 0 THEN
+            EXIT;
+        END IF;
+
+        -- Calculate units that fall into this slab
+        IF slab_record.max_units IS NULL THEN
+            units_in_slab := remaining_units;
+        ELSE
+            units_in_slab := LEAST(remaining_units, slab_record.max_units - slab_record.min_units + 1);
+        END IF;
+
+        -- Add to total with subsidy applied
+        bill_total := bill_total + (units_in_slab * slab_record.rate_per_unit * (1 - COALESCE(slab_record.subsidy_percentage, 0) / 100));
+        
+        -- Track highest fixed charge
+        highest_fixed_charge := GREATEST(highest_fixed_charge, COALESCE(slab_record.fixed_charge, 0));
+        
+        remaining_units := remaining_units - units_in_slab;
+    END LOOP;
+
+    -- 2. Add the fixed charge
+    bill_total := bill_total + highest_fixed_charge;
+
+    RETURN ROUND(bill_total::NUMERIC, 2);
+END;
+$$ LANGUAGE plpgsql;
+
+        WHERE id = cycle_record.id;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION update_all_billing_estimates()
 RETURNS VOID AS $$
 DECLARE
     cycle_record RECORD;
     calculated_units FLOAT;
-    bill_amount FLOAT;
-    base_rate FLOAT := 5.0; -- Default rate if no slab logic is applied
 BEGIN
     FOR cycle_record IN SELECT * FROM ps_billing_cycles WHERE is_active = TRUE LOOP
-        -- 1. Calculate units consumed in this cycle
+        -- 1. Calculate active units
         SELECT COALESCE(SUM(energy_consumed_kwh), 0) INTO calculated_units
         FROM ps_appliance_usage_logs l
         JOIN ps_appliances a ON l.appliance_id = a.id
@@ -270,18 +336,71 @@ BEGIN
         WHERE r.home_id = cycle_record.home_id
         AND l.turned_on_at >= cycle_record.start_date;
 
-        -- 2. Update the billing cycle record
+        -- 2. Update the cycle
         UPDATE ps_billing_cycles SET 
             total_units = calculated_units,
-            estimated_bill = calculated_units * base_rate, -- Simplified; can be linked to ps_tariff_slabs
+            estimated_bill = calculate_bill_amount(calculated_units),
             updated_at = NOW()
         WHERE id = cycle_record.id;
     END LOOP;
 END;
 $$ LANGUAGE plpgsql;
+
+-- 3. On-demand sync for a specific home (Used by frontend)
+-- This version includes REAL-TIME calculation for appliances currently running
+CREATE OR REPLACE FUNCTION sync_billing_estimate(home_id_param UUID)
+RETURNS VOID AS $$
+DECLARE
+    active_cycle_record RECORD;
+    completed_units FLOAT;
+    running_units FLOAT;
+    total_units_sum FLOAT;
+BEGIN
+    SELECT * INTO active_cycle_record FROM ps_billing_cycles WHERE home_id = home_id_param AND is_active = TRUE LIMIT 1;
+    IF active_cycle_record IS NULL THEN RETURN; END IF;
+
+    -- A. Calculate units from FINISHED sessions
+    SELECT COALESCE(SUM(energy_consumed_kwh), 0) INTO completed_units
+    FROM ps_appliance_usage_logs l
+    JOIN ps_appliances a ON l.appliance_id = a.id
+    JOIN ps_rooms r ON a.room_id = r.id
+    WHERE r.home_id = home_id_param AND l.turned_off_at IS NOT NULL
+    AND l.turned_on_at >= active_cycle_record.start_date;
+
+    -- B. Calculate units from CURRENTLY RUNNING appliances (Realtime)
+    SELECT COALESCE(SUM((a.wattage / 1000.0) * (EXTRACT(EPOCH FROM (NOW() - l.turned_on_at)) / 3600.0)), 0) INTO running_units
+    FROM ps_appliance_usage_logs l
+    JOIN ps_appliances a ON l.appliance_id = a.id
+    JOIN ps_rooms r ON a.room_id = r.id
+    WHERE r.home_id = home_id_param AND l.turned_off_at IS NULL
+    AND l.turned_on_at >= active_cycle_record.start_date;
+
+    total_units_sum := completed_units + running_units;
+
+    -- C. Update the cycle
+    UPDATE ps_billing_cycles SET 
+        total_units = total_units_sum,
+        estimated_bill = calculate_bill_amount(total_units_sum),
+        updated_at = NOW()
+    WHERE id = active_cycle_record.id;
+END;
+$$ LANGUAGE plpgsql;
 ```
 
-### Step 3: Schedule the Background Job
+### Step 3: Populate Default Tariff Slabs
+Run this to ensure your bill calculations work immediately:
+
+```sql
+INSERT INTO ps_tariff_slabs (min_units, max_units, rate_per_unit, fixed_charge, subsidy_percentage, is_active)
+VALUES 
+(0, 100, 0, 0, 100, true),
+(101, 200, 2.25, 20, 0, true),
+(201, 400, 4.50, 30, 0, true),
+(401, NULL, 6.00, 50, 0, true)
+ON CONFLICT DO NOTHING;
+```
+
+### Step 4: Schedule the Background Job
 Schedule this function to run every hour to ensure the database is always reasonably up-to-date.
 
 ```sql
@@ -295,8 +414,38 @@ SELECT cron.schedule(
 
 ---
 
-## 8. Summary of Advantages
+## 8. Frontend Theme Implementation
+The app now respects the user's system theme preference by default.
+
+### Implementation:
+```javascript
+// In App.jsx and DashboardLayout.jsx
+const getInitialTheme = () => {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) return savedTheme;
+  
+  // Check system preference
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+};
+```
+
+### Behavior:
+| Scenario | Result |
+|---|---|
+| New user with Dark Mode OS | App starts in Dark Mode |
+| New user with Light Mode OS | App starts in Light Mode |
+| User manually toggles theme | Preference saved to localStorage |
+| User clears localStorage | Reverts to system preference |
+
+---
+
+## 9. Summary of Advantages
 1. **Zero Maintenance**: No need to manage a Node.js server, PM2, or SSL certificates for the backend.
 2. **Built-in Scalability**: Supabase handles connection pooling and high availability.
 3. **Instant Latency**: Direct client-to-DB connections are faster than routing through an Express server.
 4. **Realtime included**: WebSockets are built-in for live load monitoring.
+5. **Real-time Billing**: Frontend calculates active session consumption on-the-fly.
+6. **System Theme Respect**: App automatically matches user's OS theme preference.

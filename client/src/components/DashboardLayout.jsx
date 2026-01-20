@@ -16,12 +16,33 @@ import {
 export default function DashboardLayout({ children }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const [user, setUser] = useState(() => {
-        const userData = localStorage.getItem('user');
-        return userData ? JSON.parse(userData) : null;
-    });
+    const [user, setUser] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    
+    // Initialize theme from localStorage or system preference
+    const getInitialTheme = () => {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) return savedTheme;
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        }
+        return 'light';
+    };
+    const [theme, setTheme] = useState(getInitialTheme);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+            if (supabaseUser) {
+                setUser({
+                    id: supabaseUser.id,
+                    email: supabaseUser.email,
+                    name: supabaseUser.user_metadata?.name || supabaseUser.email.split('@')[0]
+                });
+            }
+        };
+        fetchUser();
+    }, []);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);

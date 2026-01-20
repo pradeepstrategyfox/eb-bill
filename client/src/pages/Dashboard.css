@@ -438,21 +438,38 @@ h1 {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.stat-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .stat-label {
   color: var(--text-muted);
   font-size: 0.9rem;
   margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-change {
   font-size: 0.8rem;
   color: var(--accent-blue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Insights Styles */
@@ -496,16 +513,23 @@ h1 {
 
 .consumer-info {
   flex: 1;
+  min-width: 0;
 }
 
 .consumer-name {
   font-weight: 600;
   font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .consumer-room {
   font-size: 0.85rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .consumer-stats {
@@ -656,6 +680,7 @@ h1 {
 
 .room-header-text {
   flex: 1;
+  min-width: 0;
 }
 
 .title-row {
@@ -663,6 +688,7 @@ h1 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2px;
+  gap: 8px;
 }
 
 .room-header-text h3 {
@@ -670,12 +696,18 @@ h1 {
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .room-header-text p {
   margin: 0;
   font-size: 0.8rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .appliances-inner-list {
@@ -711,17 +743,26 @@ h1 {
 .app-basic-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
 }
 
 .app-name-label {
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-wattage-label {
   font-size: 0.7rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .room-card-footer {
